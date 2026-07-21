@@ -1,6 +1,6 @@
 # Remediation Core
 
-Provider-agnostic dependency remediation engine. The initial implementation targets npm direct dependencies and is designed to run locally or inside a container without Git provider credentials.
+Provider-agnostic dependency remediation engine distributed as a pinned CLI release. The initial implementation targets npm direct dependencies and runs without Git provider credentials.
 
 ## Current Scope
 
@@ -16,9 +16,9 @@ Provider-agnostic dependency remediation engine. The initial implementation targ
 
 | Security Workflows | Remediation Core | Status |
 | --- | --- | --- |
-| v1.0.0 | v0.1.0 | Planned |
+| v1.0.0 | v0.1.1 | Planned |
 
-## Usage
+## CLI Usage
 
 ```bash
 go run ./cmd/remediate \
@@ -75,3 +75,14 @@ Tagged releases publish Linux CLI binaries:
 `security-workflows` downloads the pinned release asset instead of building `remediation-core` from source on every run.
 
 Use `v0.1.1` or newer for quiet Syft directory scans with explicit source metadata.
+
+## Current Integration
+
+`security-workflows` invokes this project as:
+
+```text
+GitHub Release: opsbento/remediation-core v0.1.1
+Asset: remediate-linux-amd64
+```
+
+Syft, Grype, Node.js, and npm are prepared by the workflow repository. This keeps remediation-core focused on dependency analysis, update, and verification.

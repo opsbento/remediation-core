@@ -4,7 +4,7 @@ This repository contains the provider-agnostic remediation engine. Keep provider
 
 ## Verification
 
-Use GitHub Actions as the primary verification path. The repository CI runs unit tests, builds the CLI, runs the npm remediation fixture, and uploads remediation evidence artifacts.
+Use GitHub Actions as the primary verification path. The repository CI runs unit tests, builds the CLI, runs the npm remediation fixture, and uploads remediation evidence artifacts. Release validation happens by publishing a tagged CLI asset and consuming it from `security-workflows`.
 
 ## Design Rules
 
