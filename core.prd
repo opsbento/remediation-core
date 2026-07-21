@@ -180,6 +180,7 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] Linux CLI assets: remediate-linux-amd64 and remediate-linux-arm64
 [Done] v0.1.1 CLI release tag
 [Done] Syft source metadata to avoid unnamed directory scan warnings
+[Done] release notes file for v0.1.1
 ```
 
 ### Completed in security-workflows
@@ -207,6 +208,8 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] helper script for dependency scan
 [Done] helper script for downloading remediation-core CLI
 [Done] helper script for committing dependency changes
+[Done] remediation-core CLI checksum verification before execution
+[Done] shellcheck validation for helper scripts in CI
 ```
 
 ### Created for pipeline testing
@@ -228,7 +231,6 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Not Done] Tag security-workflows v1.0.0 / v1
 [Not Done] Validate duplicate PR prevention by rerunning caller workflow
 [Not Done] Validate closed-without-merge behavior
-[Not Done] Add release notes for v0.1.1
 [Not Done] Decide whether historical unsigned commits should be re-signed
 ```
 
@@ -240,7 +242,6 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Improve] Result should include artifact paths for workflow summaries.
 [Improve] Result should include skip reason codes, not only free-form messages.
 [Improve] Changed-file guard should handle subdirectory remediation paths more explicitly.
-[Improve] Workflow should use pinned CLI release checksums before executing downloaded binary.
 [Improve] Optional future container distribution can be added after CLI release flow is stable.
 [Improve] Workflow should pin third-party actions to full commit SHA before production release.
 [Improve] Workflow should support existing closed PR detection policy.
@@ -266,6 +267,8 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] security-workflows punya helper script ringkas untuk dependency scan.
 [Done] security-workflows punya helper script untuk download remediation-core CLI.
 [Done] security-workflows punya helper script untuk commit dependency changes.
+[Done] security-workflows verifikasi checksums.txt sebelum menjalankan remediation-core CLI.
+[Done] security-workflows CI menjalankan shellcheck untuk helper scripts.
 [Done] dependency scan workflow sudah memakai Syft source metadata agar warning unnamed directory hilang.
 [Done] remediation workflow memakai REMEDIATION_TOKEN sebagai optional PAT.
 [Done] remediation-demo dibuat sebagai caller test repository.
@@ -286,7 +289,6 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Todo] Validasi behavior ketika PR ditutup tanpa merge.
 [Todo] Tag security-workflows v1.0.0 dan floating tag v1.
 [Todo] Pin third-party GitHub Actions ke full commit SHA untuk production release.
-[Todo] Tambahkan release notes formal untuk remediation-core v0.1.1.
 [Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
 [Todo] Tambahkan test case demo untuk no finding.
 [Todo] Tambahkan test case demo untuk major-only fix blocked.
@@ -297,14 +299,12 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 
 ```text
 [Improve] Resolver perlu skip npm deprecated version jika ada safe non-deprecated version.
-[Improve] security-workflows perlu verifikasi checksums.txt sebelum menjalankan binary CLI.
 [Improve] result.json perlu menyertakan artifact paths agar workflow summary lebih informatif.
 [Improve] result.json perlu reason_code terstruktur untuk SKIPPED, FAILED, dan NEEDS_MANUAL_REVIEW.
 [Improve] update policy perlu lebih eksplisit: patch-only, minor-only, allow-major.
 [Improve] dry-run mode perlu summary yang jelas dan tidak membuat branch/PR.
 [Improve] closed PR detection policy perlu dibuat eksplisit.
 [Improve] commit author bisa dibuat configurable jika nanti tidak ingin selalu memakai github-actions[bot].
-[Improve] helper scripts bisa diberi shellcheck di CI.
 [Improve] workflow release bisa dipin ke remediation-core checksum atau signed artifact.
 [Improve] container image bisa ditambahkan nanti setelah CLI release flow stabil.
 ```

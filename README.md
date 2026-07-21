@@ -76,6 +76,8 @@ Tagged releases publish Linux CLI binaries:
 
 Use `v0.1.1` or newer for quiet Syft directory scans with explicit source metadata.
 
+Release notes can be stored in `docs/releases/<tag>.md`; the release workflow uses that file when creating or updating the GitHub Release.
+
 ## Current Integration
 
 `security-workflows` invokes this project as:

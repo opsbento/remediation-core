@@ -48,10 +48,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          notes_args=(--notes "remediation-core CLI release $RELEASE_TAG")
+          if [[ -f "docs/releases/${RELEASE_TAG}.md" ]]; then
+            notes_args=(--notes-file "docs/releases/${RELEASE_TAG}.md")
+          fi
+
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" dist/remediate-linux-amd64 dist/remediate-linux-arm64 dist/checksums.txt --clobber
+            gh release edit "$RELEASE_TAG" --title "$RELEASE_TAG" "${notes_args[@]}"
           else
             gh release create "$RELEASE_TAG" dist/remediate-linux-amd64 dist/remediate-linux-arm64 dist/checksums.txt \
               --title "$RELEASE_TAG" \
-              --notes "remediation-core CLI release $RELEASE_TAG"
+              "${notes_args[@]}"
           fi
