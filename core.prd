@@ -220,6 +220,7 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] remediation-core supports multiple direct dependency updates per run
 [Done] remediation-core prioritizes update candidates by vulnerability severity
 [Done] default maximum_updates raised from 1 to 5 for production-grade batching
+[Done] candidate versions that introduce findings at or above minimum severity are rejected
 ```
 
 ### Created for pipeline testing
@@ -289,6 +290,7 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] maximum_updates sekarang benar-benar memproses beberapa direct dependency dalam satu run.
 [Done] kandidat remediation diprioritaskan berdasarkan severity sebelum nama package.
 [Done] default maximum_updates dinaikkan dari 1 ke 5 di core dan reusable workflow.
+[Done] resolver/verifier menolak candidate version yang masih memunculkan finding baru pada threshold minimum severity.
 [Done] dependency scan workflow sudah memakai Syft source metadata agar warning unnamed directory hilang.
 [Done] remediation workflow memakai REMEDIATION_TOKEN sebagai optional PAT.
 [Done] remediation-demo dibuat sebagai caller test repository.
@@ -306,8 +308,8 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 
 ```text
 [Todo] Validasi behavior ketika PR ditutup tanpa merge.
-[Todo] Publish remediation-core v0.2.0 release asset.
-[Todo] Tag security-workflows v1.0.0 dan floating tag v1 setelah v0.2.0 asset tersedia.
+[Todo] Publish remediation-core v0.2.1 release asset.
+[Todo] Tag security-workflows v1.0.0 dan floating tag v1 setelah v0.2.1 asset tersedia.
 [Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
 [Todo] Tambahkan test case demo khusus untuk no finding.
 [Todo] Tambahkan test case demo untuk major-only fix blocked.
@@ -1568,6 +1570,7 @@ Semantic versioning:
 ```text
 v0.1.0
 v0.2.0
+v0.2.1
 v1.0.0
 ```
 
@@ -1598,15 +1601,15 @@ Pinned engine:
 ```text
 security-workflows v1.0.0
         ↓
-remediation-core v0.2.0
+remediation-core v0.2.1
 ```
 
 Compatibility matrix:
 
 | Security Workflows | Remediation Core | Status           |
 | ------------------ | ---------------- | ---------------- |
-| main               | v0.2.0           | Active demo      |
-| v1.0.0             | v0.2.0           | Planned          |
+| main               | v0.2.1           | Active demo      |
+| v1.0.0             | v0.2.1           | Planned          |
 
 ---
 

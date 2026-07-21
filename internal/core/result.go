@@ -26,6 +26,7 @@ type Vulnerability struct {
 type Verification struct {
 	TargetFindingsRemoved bool `json:"target_findings_removed"`
 	NewCriticalFindings   int  `json:"new_critical_findings"`
+	NewThresholdFindings  int  `json:"new_threshold_findings"`
 	DependencyFilesValid  bool `json:"dependency_files_valid"`
 }
 

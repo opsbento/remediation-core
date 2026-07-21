@@ -113,28 +113,57 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 		if !ok {
 			continue
 		}
-		target, err := resolver.ResolveMinimumSafe(group, e.Registry, resolver.Policy{AllowMajor: job.AllowMajor})
+		candidates, err := resolver.ResolveCandidates(group, e.Registry, resolver.Policy{AllowMajor: job.AllowMajor})
 		if err != nil {
 			manualReasons = append(manualReasons, fmt.Sprintf("%s: %s", group.PackageName, err.Error()))
 			continue
 		}
 
-		updateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-		err = adapter.Update(updateCtx, workdir, group.PackageName, target)
-		cancel()
-		if err != nil {
-			return failed(job, fmt.Errorf("update dependency %s: %w", group.PackageName, err)), err
+		var selected string
+		for _, target := range candidates {
+			updateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+			err = adapter.Update(updateCtx, workdir, group.PackageName, target)
+			cancel()
+			if err != nil {
+				return failed(job, fmt.Errorf("update dependency %s: %w", group.PackageName, err)), err
+			}
+			candidateSBOM := filepath.Join(artifactDir, fmt.Sprintf("sbom.candidate.%s.json", safeArtifactName(group.PackageName)))
+			candidateFindings := filepath.Join(artifactDir, fmt.Sprintf("findings.candidate.%s.json", safeArtifactName(group.PackageName)))
+			if err := e.Inventory.Generate(ctx, workdir, candidateSBOM); err != nil {
+				return failed(job, fmt.Errorf("generate candidate SBOM: %w", err)), err
+			}
+			if err := e.Scanner.Scan(ctx, candidateSBOM, candidateFindings); err != nil {
+				return failed(job, fmt.Errorf("scan candidate SBOM: %w", err)), err
+			}
+			candidateRaw, err := os.ReadFile(candidateFindings)
+			if err != nil {
+				return failed(job, err), err
+			}
+			candidateAfter, err := findings.NormalizeGrype(candidateRaw, job.MinimumSeverity)
+			if err != nil {
+				return failed(job, err), err
+			}
+			vulnIDs := findingIDs(group.Findings)
+			if verifier.TargetFindingsRemoved(candidateAfter, group.PackageName, vulnIDs) &&
+				verifier.NewFindingsAtSeverity(before, candidateAfter, job.MinimumSeverity) == 0 {
+				selected = target
+				break
+			}
+		}
+		if selected == "" {
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: no candidate avoids new findings at or above %s", group.PackageName, job.MinimumSeverity))
+			continue
 		}
 		updates = append(updates, Dependency{
 			Name:         group.PackageName,
 			From:         current.Version,
-			To:           target,
+			To:           selected,
 			Relationship: current.Relationship,
 		})
 		selectedGroups = append(selectedGroups, group)
 		for i := range deps {
 			if deps[i].Name == group.PackageName {
-				deps[i].Version = target
+				deps[i].Version = selected
 			}
 		}
 	}
@@ -195,10 +224,11 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 	verification := Verification{
 		TargetFindingsRemoved: removed,
 		NewCriticalFindings:   verifier.NewCriticalFindings(before, after),
+		NewThresholdFindings:  verifier.NewFindingsAtSeverity(before, after, job.MinimumSeverity),
 		DependencyFilesValid:  valid,
 	}
 	status := StatusVerifiedUpdate
-	if !verification.TargetFindingsRemoved || verification.NewCriticalFindings > 0 || !verification.DependencyFilesValid {
+	if !verification.TargetFindingsRemoved || verification.NewThresholdFindings > 0 || !verification.DependencyFilesValid {
 		status = StatusFailed
 	}
 
@@ -295,6 +325,31 @@ func vulnerabilitiesForGroups(groups []findings.Group) []Vulnerability {
 			seen[finding.VulnerabilityID] = true
 			out = append(out, Vulnerability{ID: finding.VulnerabilityID, Severity: finding.Severity})
 		}
+	}
+	return out
+}
+
+func findingIDs(fs []findings.Finding) []string {
+	ids := make([]string, 0, len(fs))
+	for _, finding := range fs {
+		ids = append(ids, finding.VulnerabilityID)
+	}
+	return ids
+}
+
+func safeArtifactName(name string) string {
+	name = strings.ToLower(name)
+	var b strings.Builder
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+			b.WriteRune(r)
+			continue
+		}
+		b.WriteByte('-')
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return "dependency"
 	}
 	return out
 }

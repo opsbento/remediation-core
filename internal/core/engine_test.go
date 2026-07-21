@@ -127,6 +127,38 @@ func TestEngineUpdatesMultipleDependenciesBySeverityPriority(t *testing.T) {
 	}
 }
 
+func TestEngineRejectsCandidateWithNewThresholdFinding(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	engine := testEngine([]scanReport{
+		{findings: grypeReport("pkg", "1.0.0", "CVE-OLD", "High", "1.0.1")},
+		{findings: grypeReport("pkg", "1.0.1", "CVE-NEW", "High", "1.0.2")},
+		{findings: `{"matches":[]}`},
+		{findings: `{"matches":[]}`},
+	})
+	engine.Registry = fakeRegistry{"1.0.1", "1.0.2", "2.0.0"}
+
+	result, err := engine.Run(context.Background(), Job{
+		Directory:       ".",
+		Ecosystem:       "npm",
+		MinimumSeverity: "high",
+		Strategy:        "minimum-safe",
+		MaximumUpdates:  1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != StatusVerifiedUpdate {
+		t.Fatalf("got status %q, want %q: %s", result.Status, StatusVerifiedUpdate, result.Message)
+	}
+	if result.Dependency == nil || result.Dependency.To != "1.0.2" {
+		t.Fatalf("got dependency %#v, want target 1.0.2", result.Dependency)
+	}
+	if result.Verification == nil || result.Verification.NewThresholdFindings != 0 {
+		t.Fatalf("unexpected verification: %#v", result.Verification)
+	}
+}
+
 func TestEngineMajorOnlyFixNeedsManualReview(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)

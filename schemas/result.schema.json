@@ -55,11 +55,12 @@
     },
     "verification": {
       "type": "object",
-      "required": ["target_findings_removed", "new_critical_findings", "dependency_files_valid"],
+      "required": ["target_findings_removed", "new_critical_findings", "new_threshold_findings", "dependency_files_valid"],
       "additionalProperties": false,
       "properties": {
         "target_findings_removed": { "type": "boolean" },
         "new_critical_findings": { "type": "integer", "minimum": 0 },
+        "new_threshold_findings": { "type": "integer", "minimum": 0 },
         "dependency_files_valid": { "type": "boolean" }
       }
     },

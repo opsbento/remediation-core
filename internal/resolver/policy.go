@@ -16,9 +16,20 @@ type Policy struct {
 }
 
 func ResolveMinimumSafe(group findings.Group, registry Registry, policy Policy) (string, error) {
-	available, err := registry.Versions(group.PackageName)
+	candidates, err := ResolveCandidates(group, registry, policy)
 	if err != nil {
 		return "", err
+	}
+	if len(candidates) == 0 {
+		return "", fmt.Errorf("no safe version satisfies policy")
+	}
+	return candidates[0], nil
+}
+
+func ResolveCandidates(group findings.Group, registry Registry, policy Policy) ([]string, error) {
+	available, err := registry.Versions(group.PackageName)
+	if err != nil {
+		return nil, err
 	}
 	availableSet := map[string]bool{}
 	for _, version := range available {
@@ -29,31 +40,27 @@ func ResolveMinimumSafe(group findings.Group, registry Registry, policy Policy) 
 
 	current, err := ParseVersion(group.InstalledVersion)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	candidates := map[string]bool{}
 	for _, finding := range group.Findings {
 		if len(finding.FixedVersions) == 0 {
-			return "", fmt.Errorf("finding %s has no known fixed version", finding.VulnerabilityID)
-		}
-		for _, fixed := range finding.FixedVersions {
-			if !availableSet[fixed] || IsPrerelease(fixed) || Compare(fixed, group.InstalledVersion) <= 0 {
-				continue
-			}
-			target, err := ParseVersion(fixed)
-			if err != nil {
-				continue
-			}
-			if !policy.AllowMajor && target.Major != current.Major {
-				continue
-			}
-			candidates[fixed] = true
+			return nil, fmt.Errorf("finding %s has no known fixed version", finding.VulnerabilityID)
 		}
 	}
 
 	var sorted []string
-	for candidate := range candidates {
+	for candidate := range availableSet {
+		if Compare(candidate, group.InstalledVersion) <= 0 {
+			continue
+		}
+		target, err := ParseVersion(candidate)
+		if err != nil {
+			continue
+		}
+		if !policy.AllowMajor && target.Major != current.Major {
+			continue
+		}
 		if fixesAll(candidate, group.Findings) {
 			sorted = append(sorted, candidate)
 		}
@@ -62,9 +69,9 @@ func ResolveMinimumSafe(group findings.Group, registry Registry, policy Policy) 
 		return Compare(sorted[i], sorted[j]) < 0
 	})
 	if len(sorted) == 0 {
-		return "", fmt.Errorf("no safe version satisfies policy")
+		return nil, fmt.Errorf("no safe version satisfies policy")
 	}
-	return sorted[0], nil
+	return sorted, nil
 }
 
 func fixesAll(candidate string, fs []findings.Finding) bool {

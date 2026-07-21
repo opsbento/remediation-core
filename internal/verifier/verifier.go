@@ -15,6 +15,7 @@ import (
 type Outcome struct {
 	TargetFindingsRemoved bool
 	NewCriticalFindings   int
+	NewThresholdFindings  int
 	DependencyFilesValid  bool
 	ChangedFiles          []string
 }
@@ -95,13 +96,17 @@ func TargetFindingsRemoved(after []findings.Finding, packageName string, vulnIDs
 }
 
 func NewCriticalFindings(before, after []findings.Finding) int {
-	beforeSet := findingSet(before, "critical")
+	return NewFindingsAtSeverity(before, after, "critical")
+}
+
+func NewFindingsAtSeverity(before, after []findings.Finding, minimumSeverity string) int {
+	beforeSet := findingSet(before, minimumSeverity)
 	count := 0
 	for _, finding := range after {
-		if !strings.EqualFold(finding.Severity, "critical") {
+		if !findings.SeverityAtLeast(finding.Severity, minimumSeverity) {
 			continue
 		}
-		key := finding.PackageName + "\x00" + finding.InstalledVersion + "\x00" + finding.VulnerabilityID
+		key := finding.PackageName + "\x00" + finding.VulnerabilityID
 		if !beforeSet[key] {
 			count++
 		}
@@ -113,9 +118,11 @@ func findingSet(fs []findings.Finding, severity string) map[string]bool {
 	out := map[string]bool{}
 	for _, finding := range fs {
 		if severity != "" && !strings.EqualFold(finding.Severity, severity) {
-			continue
+			if !findings.SeverityAtLeast(finding.Severity, severity) {
+				continue
+			}
 		}
-		key := finding.PackageName + "\x00" + finding.InstalledVersion + "\x00" + finding.VulnerabilityID
+		key := finding.PackageName + "\x00" + finding.VulnerabilityID
 		out[key] = true
 	}
 	return out
