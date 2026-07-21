@@ -90,3 +90,5 @@ Asset: remediate-linux-amd64
 Syft, Grype, Node.js, and npm are prepared by the workflow repository. This keeps remediation-core focused on dependency analysis, update, and verification.
 
 Project workflows use Node 24-generation official GitHub actions. Self-hosted runners must be new enough for those action runtimes.
+
+GitHub Actions dependencies are pinned to full commit SHAs for production hardening, with the source major version retained as a comment.

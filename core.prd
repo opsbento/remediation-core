@@ -214,6 +214,7 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] dry-run summary for VERIFIED_UPDATE without branch or PR creation
 [Done] official GitHub actions bumped to Node 24 runtime generation
 [Done] remediation branch and PR logs clarified for duplicate/open PR reruns
+[Done] third-party GitHub Actions pinned to full commit SHA
 ```
 
 ### Created for pipeline testing
@@ -277,12 +278,14 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] dry-run mode punya summary eksplisit tanpa push branch atau create PR.
 [Done] Node 20 deprecation warning ditangani dengan bump actions/checkout, setup-node, setup-go, upload-artifact.
 [Done] log duplicate PR rerun sekarang menjelaskan update existing PR, bukan terlihat seperti create baru.
+[Done] third-party GitHub Actions dipin ke full commit SHA untuk production hardening.
 [Done] dependency scan workflow sudah memakai Syft source metadata agar warning unnamed directory hilang.
 [Done] remediation workflow memakai REMEDIATION_TOKEN sebagai optional PAT.
 [Done] remediation-demo dibuat sebagai caller test repository.
 [Done] remediation-demo punya npm vulnerable fixture dengan lodash 4.17.19.
 [Done] remediation-demo berhasil membuat remediation branch.
 [Done] remediation-demo berhasil membuat Pull Request.
+[Done] remediation-demo berhasil rerun workflow dan update PR existing tanpa membuat PR duplicate.
 [Done] *.prd sudah ditambahkan ke .gitignore di repo terkait.
 [Done] README dan CONTRIBUTING tiga repo sudah disesuaikan dengan model CLI release.
 [Done] Commit terbaru dokumentasi/refactor sudah GPG-signed.
@@ -292,11 +295,8 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 
 ```text
 [Todo] Tunggu/validasi release asset remediation-core v0.1.1 tersedia lengkap di GitHub Release.
-[Todo] Rerun dependency-remediation workflow setelah v0.1.1 release asset tersedia.
-[Todo] Validasi duplicate PR prevention dengan rerun workflow pada PR yang masih open.
 [Todo] Validasi behavior ketika PR ditutup tanpa merge.
 [Todo] Tag security-workflows v1.0.0 dan floating tag v1.
-[Todo] Pin third-party GitHub Actions ke full commit SHA untuk production release.
 [Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
 [Todo] Tambahkan test case demo untuk no finding.
 [Todo] Tambahkan test case demo untuk major-only fix blocked.
