@@ -215,6 +215,7 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] official GitHub actions bumped to Node 24 runtime generation
 [Done] remediation branch and PR logs clarified for duplicate/open PR reruns
 [Done] third-party GitHub Actions pinned to full commit SHA
+[Done] workflow artifacts made opt-in; remediation and scan results printed to logs/job summary by default
 ```
 
 ### Created for pipeline testing
@@ -279,6 +280,7 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] Node 20 deprecation warning ditangani dengan bump actions/checkout, setup-node, setup-go, upload-artifact.
 [Done] log duplicate PR rerun sekarang menjelaskan update existing PR, bukan terlihat seperti create baru.
 [Done] third-party GitHub Actions dipin ke full commit SHA untuk production hardening.
+[Done] artifact upload dibuat opt-in lewat upload-artifacts; default output pindah ke logs/job summary.
 [Done] dependency scan workflow sudah memakai Syft source metadata agar warning unnamed directory hilang.
 [Done] remediation workflow memakai REMEDIATION_TOKEN sebagai optional PAT.
 [Done] remediation-demo dibuat sebagai caller test repository.
@@ -286,6 +288,7 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] remediation-demo berhasil membuat remediation branch.
 [Done] remediation-demo berhasil membuat Pull Request.
 [Done] remediation-demo berhasil rerun workflow dan update PR existing tanpa membuat PR duplicate.
+[Done] remediation-demo punya mixed dependency fixture untuk vulnerable dan non-vulnerable dependency.
 [Done] *.prd sudah ditambahkan ke .gitignore di repo terkait.
 [Done] README dan CONTRIBUTING tiga repo sudah disesuaikan dengan model CLI release.
 [Done] Commit terbaru dokumentasi/refactor sudah GPG-signed.
@@ -298,7 +301,7 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Todo] Validasi behavior ketika PR ditutup tanpa merge.
 [Todo] Tag security-workflows v1.0.0 dan floating tag v1.
 [Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
-[Todo] Tambahkan test case demo untuk no finding.
+[Todo] Tambahkan test case demo khusus untuk no finding.
 [Todo] Tambahkan test case demo untuk major-only fix blocked.
 [Todo] Tambahkan test case demo untuk transitive dependency skipped.
 ```
