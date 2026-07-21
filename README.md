@@ -73,3 +73,5 @@ Tagged releases publish Linux CLI binaries:
 - `checksums.txt`
 
 `security-workflows` downloads the pinned release asset instead of building `remediation-core` from source on every run.
+
+Use `v0.1.1` or newer for quiet Syft directory scans with explicit source metadata.
