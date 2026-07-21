@@ -6,11 +6,11 @@
 
 ## Document Version
 
-**v0.4**
+**v0.5**
 
 ## Status
 
-Implementation in progress - pipeline-first testing
+Implementation in progress - CLI release and pipeline-first testing
 
 ## Last Updated
 
@@ -131,10 +131,13 @@ Status saat ini:
 [Completed] npm adapter prototype
 [Completed] Central reusable workflow scaffold
 [Completed] Pipeline-first testing direction
-[In Progress] Repository scaffolding validation via GitHub Actions
-[In Progress] End-to-end Pull Request test repository
-[Planned] Core container image
-[Planned] End-to-end Pull Request creation
+[Completed] Repository scaffolding validation via GitHub Actions
+[Completed] End-to-end Pull Request test repository
+[Completed] End-to-end Pull Request creation
+[Completed] remediation-core CLI release packaging
+[In Progress] Duplicate Pull Request validation
+[Planned] Production pinning by tag and full action SHA
+[Deferred] Core container image
 ```
 
 ## 2.3 Implementation Status Snapshot
@@ -173,6 +176,10 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] README and contribution guidance
 [Done] GitHub Actions CI with unit and npm E2E jobs
 [Done] artifact_directory support for pipeline evidence output
+[Done] GitHub Release workflow for CLI assets
+[Done] Linux CLI assets: remediate-linux-amd64 and remediate-linux-arm64
+[Done] v0.1.1 CLI release tag
+[Done] Syft source metadata to avoid unnamed directory scan warnings
 ```
 
 ### Completed in security-workflows
@@ -183,7 +190,7 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] reusable dependency-scan workflow
 [Done] workflow_call inputs
 [Done] caller repository checkout
-[Done] remediation-core source checkout/build
+[Done] remediation-core CLI release download
 [Done] helper scripts checkout
 [Done] result.json reader
 [Done] NO_FINDING, SKIPPED, NEEDS_MANUAL_REVIEW handling
@@ -196,6 +203,10 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] GitHub job summary writer
 [Done] caller workflow examples
 [Done] basic CI for workflow repository
+[Done] helper scripts for installing Syft/Grype
+[Done] helper script for dependency scan
+[Done] helper script for downloading remediation-core CLI
+[Done] helper script for committing dependency changes
 ```
 
 ### Created for pipeline testing
@@ -203,24 +214,22 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 ```text
 [Created] /Users/riowiraldhani/Documents/GitHub/remediation-demo
 [Purpose] caller repository for end-to-end workflow invocation and Pull Request creation test
+[Done] vulnerable npm fixture using lodash 4.17.19
+[Done] caller workflow for dependency remediation
+[Done] caller workflow for dependency scan
+[Done] branch creation validated
+[Done] Pull Request creation validated
 ```
 
 ### Not Done Yet
 
 ```text
-[Not Done] Commit and push remediation-core initial implementation
-[Not Done] Commit and push security-workflows initial implementation
 [Not Done] Pin third-party GitHub actions to full commit SHA for production
-[Not Done] Publish remediation-core v0.1.0 container image
-[Not Done] Pin security-workflows to remediation-core image digest
-[Not Done] Tag remediation-core v0.1.0
 [Not Done] Tag security-workflows v1.0.0 / v1
-[Not Done] Run GitHub Actions CI on remediation-core
-[Not Done] Run GitHub Actions CI on security-workflows
-[Not Done] Run remediation-demo caller workflow
-[Not Done] Validate created Pull Request in remediation-demo
 [Not Done] Validate duplicate PR prevention by rerunning caller workflow
 [Not Done] Validate closed-without-merge behavior
+[Not Done] Add release notes for v0.1.1
+[Not Done] Decide whether historical unsigned commits should be re-signed
 ```
 
 ### Needs Improvement
@@ -231,12 +240,73 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Improve] Result should include artifact paths for workflow summaries.
 [Improve] Result should include skip reason codes, not only free-form messages.
 [Improve] Changed-file guard should handle subdirectory remediation paths more explicitly.
-[Improve] Workflow should use containerized remediation-core after GHCR release exists.
+[Improve] Workflow should use pinned CLI release checksums before executing downloaded binary.
+[Improve] Optional future container distribution can be added after CLI release flow is stable.
 [Improve] Workflow should pin third-party actions to full commit SHA before production release.
 [Improve] Workflow should support existing closed PR detection policy.
 [Improve] Workflow should emit deterministic metadata that can be searched in PR bodies.
 [Improve] Workflow should add an explicit dry-run summary for test runs.
 [Improve] Demo repository should cover no finding, major-only fix blocked, and duplicate PR tests after first happy path.
+[Improve] Commit author is currently GitHub Actions bot; make it configurable later if desired.
+```
+
+## 2.4 Current Work Tracker
+
+Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-demo`.
+
+### Sudah Dilakukan
+
+```text
+[Done] remediation-core dibuat sebagai Go CLI.
+[Done] remediation-core punya release workflow untuk publish binary CLI.
+[Done] remediation-core v0.1.1 sudah ditag untuk release asset.
+[Done] security-workflows tidak lagi build remediation-core dari source saat caller workflow berjalan.
+[Done] security-workflows download pinned remediation-core CLI release.
+[Done] security-workflows punya helper script ringkas untuk install Syft/Grype.
+[Done] security-workflows punya helper script ringkas untuk dependency scan.
+[Done] security-workflows punya helper script untuk download remediation-core CLI.
+[Done] security-workflows punya helper script untuk commit dependency changes.
+[Done] dependency scan workflow sudah memakai Syft source metadata agar warning unnamed directory hilang.
+[Done] remediation workflow memakai REMEDIATION_TOKEN sebagai optional PAT.
+[Done] remediation-demo dibuat sebagai caller test repository.
+[Done] remediation-demo punya npm vulnerable fixture dengan lodash 4.17.19.
+[Done] remediation-demo berhasil membuat remediation branch.
+[Done] remediation-demo berhasil membuat Pull Request.
+[Done] *.prd sudah ditambahkan ke .gitignore di repo terkait.
+[Done] README dan CONTRIBUTING tiga repo sudah disesuaikan dengan model CLI release.
+[Done] Commit terbaru dokumentasi/refactor sudah GPG-signed.
+```
+
+### Belum Dilakukan
+
+```text
+[Todo] Tunggu/validasi release asset remediation-core v0.1.1 tersedia lengkap di GitHub Release.
+[Todo] Rerun dependency-remediation workflow setelah v0.1.1 release asset tersedia.
+[Todo] Validasi duplicate PR prevention dengan rerun workflow pada PR yang masih open.
+[Todo] Validasi behavior ketika PR ditutup tanpa merge.
+[Todo] Tag security-workflows v1.0.0 dan floating tag v1.
+[Todo] Pin third-party GitHub Actions ke full commit SHA untuk production release.
+[Todo] Tambahkan release notes formal untuk remediation-core v0.1.1.
+[Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
+[Todo] Tambahkan test case demo untuk no finding.
+[Todo] Tambahkan test case demo untuk major-only fix blocked.
+[Todo] Tambahkan test case demo untuk transitive dependency skipped.
+```
+
+### Bisa Di-improve
+
+```text
+[Improve] Resolver perlu skip npm deprecated version jika ada safe non-deprecated version.
+[Improve] security-workflows perlu verifikasi checksums.txt sebelum menjalankan binary CLI.
+[Improve] result.json perlu menyertakan artifact paths agar workflow summary lebih informatif.
+[Improve] result.json perlu reason_code terstruktur untuk SKIPPED, FAILED, dan NEEDS_MANUAL_REVIEW.
+[Improve] update policy perlu lebih eksplisit: patch-only, minor-only, allow-major.
+[Improve] dry-run mode perlu summary yang jelas dan tidak membuat branch/PR.
+[Improve] closed PR detection policy perlu dibuat eksplisit.
+[Improve] commit author bisa dibuat configurable jika nanti tidak ingin selalu memakai github-actions[bot].
+[Improve] helper scripts bisa diberi shellcheck di CI.
+[Improve] workflow release bisa dipin ke remediation-core checksum atau signed artifact.
+[Improve] container image bisa ditambahkan nanti setelah CLI release flow stabil.
 ```
 
 ---
@@ -1151,6 +1221,22 @@ Updates `lodash` from `4.17.19` to `4.17.21`.
 - No new Critical findings introduced
 ```
 
+## Current Commit and PR Identity Decision
+
+Current implementation keeps commit author as GitHub Actions bot:
+
+```text
+github-actions[bot]
+41898282+github-actions[bot]@users.noreply.github.com
+```
+
+Pull Request creator follows the token used by the caller workflow:
+
+* `GITHUB_TOKEN` creates PRs as `github-actions[bot]` when repository settings allow it;
+* `REMEDIATION_TOKEN` creates PRs as the owner of the fine-grained PAT.
+
+This is accepted for the current demo. A future improvement can make commit author name and email configurable if the project needs a different automation identity.
+
 ---
 
 # 21. Deduplication Without Database
@@ -1278,29 +1364,32 @@ Deliverables:
 
 No Pull Request creation.
 
-## Phase 3: Core Container Release
+## Phase 3: Core CLI Release
 
 Deliverables:
 
 * Dockerfile;
-* container build;
-* GHCR publishing;
+* GitHub Release workflow;
+* Linux amd64 CLI binary;
+* Linux arm64 CLI binary;
+* release checksums;
 * semantic version tag;
-* immutable image digest;
-* local usage documentation.
+* pipeline usage documentation.
 
 Example:
 
 ```text
-ghcr.io/opsbento/remediation-core:v0.1.0
+https://github.com/opsbento/remediation-core/releases/download/v0.1.1/remediate-linux-amd64
 ```
+
+Container distribution is deferred until the CLI release flow is stable.
 
 ## Phase 4: Centralized GitHub Workflow
 
 Deliverables:
 
 * reusable workflow;
-* pinned core image;
+* pinned remediation-core CLI release;
 * caller workflow example;
 * branch creation;
 * commit creation;
@@ -1384,7 +1473,7 @@ RC-016 Implement before/after verifier
 RC-017 Add npm vulnerable fixture
 RC-018 Add npm clean fixture
 RC-019 Add Dockerfile
-RC-020 Publish v0.1.0 container
+RC-020 Publish v0.1.1 CLI release
 ```
 
 ## Security Workflows
@@ -1401,7 +1490,7 @@ Initial backlog:
 SW-001 Create reusable workflow
 SW-002 Define workflow_call inputs
 SW-003 Checkout caller repository
-SW-004 Run pinned remediation-core image
+SW-004 Download and run pinned remediation-core CLI release
 SW-005 Read result.json
 SW-006 Handle NO_FINDING result
 SW-007 Handle skip and failure results
@@ -1443,8 +1532,8 @@ The MVP is complete when:
 15. Grype no longer detects the target vulnerability;
 16. no new Critical vulnerability is introduced;
 17. remediation-core produces result.json;
-18. remediation-core is published as a pinned container image;
-19. security-workflows invokes the pinned container;
+18. remediation-core is published as a pinned CLI release asset;
+19. security-workflows invokes the pinned CLI release;
 20. security-workflows creates a deterministic branch;
 21. security-workflows creates a Pull Request;
 22. rerunning the workflow does not create a duplicate Pull Request;
@@ -1469,7 +1558,7 @@ Distribution:
 
 ```text
 GitHub release binary
-GHCR container image
+GHCR container image (deferred)
 ```
 
 ## Security Workflows
@@ -1492,16 +1581,17 @@ Pinned engine:
 ```text
 security-workflows v1.0.0
         ↓
-remediation-core v0.1.0
+remediation-core v0.1.1
 ```
 
 Compatibility matrix:
 
 | Security Workflows | Remediation Core | Status           |
 | ------------------ | ---------------- | ---------------- |
-| v1.0.0             | v0.1.0           | Planned          |
+| main               | v0.1.1           | Active demo      |
+| v1.0.0             | v0.1.1           | Planned          |
 | v1.1.0             | v0.2.0           | Future           |
-| v1.1.0             | v0.1.0           | To be determined |
+| v1.1.0             | v0.1.1           | To be determined |
 
 ---
 
@@ -1509,7 +1599,7 @@ Compatibility matrix:
 
 ```text
 Core language             Go
-Core delivery             Binary and container
+Core delivery             GitHub Release CLI binary first, container later
 Inventory                 Syft
 Scanner                   Grype
 Internal SBOM             Syft JSON
