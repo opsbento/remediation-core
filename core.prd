@@ -212,6 +212,7 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 [Done] shellcheck validation for helper scripts in CI
 [Done] closed PR policy input in dependency-remediation workflow
 [Done] dry-run summary for VERIFIED_UPDATE without branch or PR creation
+[Done] official GitHub actions bumped to Node 24 runtime generation
 ```
 
 ### Created for pipeline testing
@@ -273,6 +274,7 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] security-workflows CI menjalankan shellcheck untuk helper scripts.
 [Done] dependency-remediation workflow punya closed-pr-policy eksplisit.
 [Done] dry-run mode punya summary eksplisit tanpa push branch atau create PR.
+[Done] Node 20 deprecation warning ditangani dengan bump actions/checkout, setup-node, setup-go, upload-artifact.
 [Done] dependency scan workflow sudah memakai Syft source metadata agar warning unnamed directory hilang.
 [Done] remediation workflow memakai REMEDIATION_TOKEN sebagai optional PAT.
 [Done] remediation-demo dibuat sebagai caller test repository.
