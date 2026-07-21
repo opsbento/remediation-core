@@ -1,0 +1,1566 @@
+# Product Requirements Document
+
+## Product Name
+
+**Working name:** TBD
+
+## Document Version
+
+**v0.4**
+
+## Status
+
+Implementation in progress - pipeline-first testing
+
+## Last Updated
+
+22 July 2026
+
+---
+
+# 1. Product Summary
+
+Produk ini adalah dependency remediation system yang mendeteksi vulnerability pada dependency aplikasi, menentukan versi aman, memperbarui dependency manifest dan lockfile, memverifikasi hasil perbaikan, lalu membuat Pull Request atau Merge Request.
+
+Produk dirancang agar:
+
+* tidak terikat pada satu bahasa pemrograman;
+* tidak terikat pada satu package manager;
+* tidak terikat pada satu Git provider;
+* tidak terikat pada satu CI/CD platform;
+* dapat dijalankan sebagai CLI;
+* dapat dijalankan sebagai container;
+* dapat dipakai melalui centralized workflow;
+* dapat dikembangkan untuk GitHub, GitLab, dan provider lain.
+
+Implementasi awal menggunakan:
+
+* Syft untuk dependency inventory dan SBOM;
+* Grype untuk vulnerability detection;
+* npm sebagai ecosystem pertama;
+* GitHub sebagai Git provider pertama;
+* GitHub Actions reusable workflow sebagai centralized orchestration.
+
+Produk telah dipisahkan menjadi dua repository:
+
+```text
+remediation-core
+security-workflows
+```
+
+Kedua repository sudah tersedia di local workspace:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/remediation-core
+
+/Users/riowiraldhani/Documents/GitHub/security-workflows
+```
+
+---
+
+# 2. Current Project Status
+
+## 2.1 Repository Status
+
+Dua repository utama telah dibuat dan sudah tersedia secara lokal.
+
+### Remediation Core
+
+Local path:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/remediation-core
+```
+
+Repository ini menjadi source of truth untuk:
+
+* remediation engine;
+* scanner integration;
+* finding normalization;
+* safe-version resolver;
+* ecosystem adapters;
+* update verification;
+* CLI;
+* container image;
+* structured remediation result.
+
+### Security Workflows
+
+Local path:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/security-workflows
+```
+
+Repository ini menjadi source of truth untuk:
+
+* centralized GitHub reusable workflow;
+* repository checkout;
+* workflow permissions;
+* remediation-core invocation;
+* branch dan commit creation;
+* Pull Request creation;
+* Pull Request deduplication;
+* report dan SBOM artifact upload;
+* GitHub job summary.
+
+## 2.2 Current Implementation Stage
+
+Project berada pada tahap:
+
+```text
+Repository initialization
+        ↓
+Core contract definition
+        ↓
+npm adapter implementation
+        ↓
+Centralized GitHub workflow
+        ↓
+End-to-end remediation test
+```
+
+Status saat ini:
+
+```text
+[Completed] Architecture decision
+[Completed] Two-repository separation
+[Completed] Local repository availability
+[Completed] Remediation core repository scaffold
+[Completed] Remediation core contract draft
+[Completed] npm adapter prototype
+[Completed] Central reusable workflow scaffold
+[Completed] Pipeline-first testing direction
+[In Progress] Repository scaffolding validation via GitHub Actions
+[In Progress] End-to-end Pull Request test repository
+[Planned] Core container image
+[Planned] End-to-end Pull Request creation
+```
+
+## 2.3 Implementation Status Snapshot
+
+Current implementation policy:
+
+```text
+Primary verification must run from GitHub Actions pipelines.
+Local execution is allowed for development only when explicitly requested.
+End-to-end remediation and Pull Request creation must be validated from a caller repository.
+```
+
+### Completed in remediation-core
+
+```text
+[Done] Go module scaffold
+[Done] CLI entrypoint
+[Done] Job model
+[Done] Result model
+[Done] JSON schemas
+[Done] Syft runner
+[Done] Grype runner
+[Done] Grype finding normalizer
+[Done] Finding grouping by dependency
+[Done] Ecosystem adapter interface
+[Done] npm direct dependency parser
+[Done] npm registry client
+[Done] minimum-safe resolver
+[Done] npm updater using --save-exact and --ignore-scripts
+[Done] npm dependency file validator
+[Done] changed-file allowlist guard
+[Done] before/after verifier
+[Done] npm vulnerable fixture
+[Done] npm clean fixture
+[Done] Dockerfile draft
+[Done] README and contribution guidance
+[Done] GitHub Actions CI with unit and npm E2E jobs
+[Done] artifact_directory support for pipeline evidence output
+```
+
+### Completed in security-workflows
+
+```text
+[Done] Repository scaffold
+[Done] reusable dependency-remediation workflow
+[Done] reusable dependency-scan workflow
+[Done] workflow_call inputs
+[Done] caller repository checkout
+[Done] remediation-core source checkout/build
+[Done] helper scripts checkout
+[Done] result.json reader
+[Done] NO_FINDING, SKIPPED, NEEDS_MANUAL_REVIEW handling
+[Done] deterministic branch script
+[Done] dependency change commit step
+[Done] remediation branch push step
+[Done] Pull Request create/update script
+[Done] Pull Request body generator
+[Done] SBOM and scan artifact upload
+[Done] GitHub job summary writer
+[Done] caller workflow examples
+[Done] basic CI for workflow repository
+```
+
+### Created for pipeline testing
+
+```text
+[Created] /Users/riowiraldhani/Documents/GitHub/remediation-demo
+[Purpose] caller repository for end-to-end workflow invocation and Pull Request creation test
+```
+
+### Not Done Yet
+
+```text
+[Not Done] Commit and push remediation-core initial implementation
+[Not Done] Commit and push security-workflows initial implementation
+[Not Done] Pin third-party GitHub actions to full commit SHA for production
+[Not Done] Publish remediation-core v0.1.0 container image
+[Not Done] Pin security-workflows to remediation-core image digest
+[Not Done] Tag remediation-core v0.1.0
+[Not Done] Tag security-workflows v1.0.0 / v1
+[Not Done] Run GitHub Actions CI on remediation-core
+[Not Done] Run GitHub Actions CI on security-workflows
+[Not Done] Run remediation-demo caller workflow
+[Not Done] Validate created Pull Request in remediation-demo
+[Not Done] Validate duplicate PR prevention by rerunning caller workflow
+[Not Done] Validate closed-without-merge behavior
+```
+
+### Needs Improvement
+
+```text
+[Improve] Resolver should avoid deprecated npm versions when a non-deprecated safe version exists.
+[Improve] Resolver should support explicit patch/minor-only policy names, not only allow_major.
+[Improve] Result should include artifact paths for workflow summaries.
+[Improve] Result should include skip reason codes, not only free-form messages.
+[Improve] Changed-file guard should handle subdirectory remediation paths more explicitly.
+[Improve] Workflow should use containerized remediation-core after GHCR release exists.
+[Improve] Workflow should pin third-party actions to full commit SHA before production release.
+[Improve] Workflow should support existing closed PR detection policy.
+[Improve] Workflow should emit deterministic metadata that can be searched in PR bodies.
+[Improve] Workflow should add an explicit dry-run summary for test runs.
+[Improve] Demo repository should cover no finding, major-only fix blocked, and duplicate PR tests after first happy path.
+```
+
+---
+
+# 3. Background
+
+Pipeline security saat ini dapat:
+
+1. membaca source repository;
+2. membuat SBOM menggunakan Syft;
+3. memindai SBOM menggunakan Grype;
+4. menampilkan dependency vulnerability;
+5. menggagalkan pipeline berdasarkan severity.
+
+Existing article and implementation:
+
+> How to Scan Dependency CVEs Early with Syft and Grype in GitHub Actions
+
+Current flow:
+
+```text
+Source repository
+        ↓
+Syft generates SBOM
+        ↓
+Grype scans dependency vulnerabilities
+        ↓
+Pipeline reports or blocks finding
+```
+
+Namun proses tersebut berhenti pada tahap detection.
+
+Developer atau DevOps engineer masih harus:
+
+1. membaca finding;
+2. mencari versi aman;
+3. memastikan versi tersedia;
+4. menentukan update yang kompatibel;
+5. memperbarui manifest;
+6. memperbarui lockfile;
+7. melakukan scan ulang;
+8. membuat branch;
+9. membuat Pull Request;
+10. memantau hasil CI.
+
+Produk ini melanjutkan alur tersebut menjadi:
+
+```text
+Detection
+    ↓
+Safe-version resolution
+    ↓
+Dependency update
+    ↓
+Verification
+    ↓
+Change Request
+```
+
+---
+
+# 4. Problem Statement
+
+Security scanner dapat menemukan vulnerable dependency, tetapi finding tidak otomatis menghasilkan perbaikan yang siap direview.
+
+Masalah utama:
+
+* vulnerability finding masih membutuhkan tindakan manual;
+* fixed version dari scanner belum tentu dapat langsung digunakan;
+* satu package dapat memiliki beberapa vulnerability;
+* versi pertama pada scanner output belum tentu versi terbaik;
+* setiap package manager memiliki mekanisme update berbeda;
+* manifest dan lockfile tidak boleh diedit secara sembarangan;
+* dependency update harus diverifikasi dengan scan ulang;
+* organisasi dapat memiliki banyak repository;
+* workflow kompleks tidak boleh disalin ke setiap repository;
+* solusi tidak boleh hanya bekerja untuk GitHub;
+* solusi tidak boleh hanya bekerja untuk Node.js;
+* remediation engine tidak boleh tercampur dengan provider orchestration.
+
+---
+
+# 5. Product Vision
+
+Menyediakan dependency remediation engine yang dapat mengubah vulnerability finding menjadi perubahan dependency minimal, aman, terverifikasi, dan siap direview pada berbagai Git provider.
+
+Target experience:
+
+```text
+Vulnerability detected
+        ↓
+Minimum safe version selected
+        ↓
+Manifest and lockfile updated
+        ↓
+Remediation verified
+        ↓
+Pull Request or Merge Request created
+```
+
+Product positioning:
+
+> A provider-agnostic dependency remediation engine that converts vulnerability findings into minimal, verified dependency updates.
+
+Untuk implementasi GitHub pertama:
+
+> A centralized GitHub workflow that turns Syft and Grype findings into verified dependency remediation Pull Requests.
+
+---
+
+# 6. Repository Architecture
+
+## 6.1 Repository A: Remediation Core
+
+Repository:
+
+```text
+remediation-core
+```
+
+Local workspace:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/remediation-core
+```
+
+Responsibilities:
+
+* mendeteksi package ecosystem;
+* membuat dependency inventory;
+* menjalankan vulnerability scan;
+* menormalisasi scanner output;
+* mengelompokkan findings berdasarkan dependency;
+* menentukan minimum safe version;
+* memanggil package manager adapter;
+* memperbarui dependency files;
+* memverifikasi hasil update;
+* memastikan hanya file yang diizinkan berubah;
+* menghasilkan structured remediation result;
+* berjalan secara lokal;
+* berjalan sebagai container.
+
+Repository ini tidak bertanggung jawab untuk:
+
+* membuat Pull Request;
+* membuat Merge Request;
+* menyimpan GitHub token;
+* menyimpan GitLab token;
+* membuat Git branch pada remote provider;
+* melakukan organization repository discovery;
+* melakukan scheduling;
+* menyimpan permanent job history;
+* menyediakan dashboard.
+
+## 6.2 Repository B: Security Workflows
+
+Repository:
+
+```text
+security-workflows
+```
+
+Local workspace:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/security-workflows
+```
+
+Responsibilities:
+
+* menyediakan centralized reusable GitHub workflow;
+* checkout caller repository;
+* menjalankan remediation-core;
+* menyediakan GitHub authentication;
+* membaca structured result;
+* membuat deterministic branch;
+* membuat commit;
+* push branch;
+* membuat atau memperbarui Pull Request;
+* mencegah Pull Request duplikat;
+* mengunggah SBOM dan scan reports;
+* menulis GitHub job summary;
+* mengatur workflow permissions;
+* mengatur concurrency;
+* mem-pin remediation-core release.
+
+Repository ini tidak boleh:
+
+* membaca package.json untuk menentukan fixed version;
+* mengedit package-lock.json;
+* memproses raw Grype JSON;
+* mengandung npm-specific remediation logic;
+* mengandung Go-specific remediation logic;
+* mengandung Maven-specific remediation logic;
+* menentukan vulnerable version range;
+* mengimplementasikan package registry resolver.
+
+---
+
+# 7. High-Level Architecture
+
+```text
+Application Repository
+        │
+        │ calls reusable workflow
+        ▼
+security-workflows
+        │
+        ├── checkout caller repository
+        ├── prepare GitHub authentication
+        ├── run pinned remediation-core
+        ├── read result.json
+        ├── create branch and commit
+        └── create or update Pull Request
+                    │
+                    ▼
+            remediation-core
+                    │
+          ┌─────────┴─────────┐
+          ▼                   ▼
+        Syft                 Grype
+          │                   │
+          └─────────┬─────────┘
+                    ▼
+           Normalized Findings
+                    │
+                    ▼
+             Version Resolver
+                    │
+                    ▼
+           Ecosystem Adapter
+                    │
+                    ▼
+          Updated Dependency Files
+                    │
+                    ▼
+               Verification
+                    │
+                    ▼
+          Structured JSON Result
+```
+
+---
+
+# 8. Separation of Responsibilities
+
+## Remediation Core
+
+Input:
+
+```json
+{
+  "directory": ".",
+  "ecosystem": "auto",
+  "minimum_severity": "high",
+  "strategy": "minimum-safe",
+  "allow_major": false,
+  "maximum_updates": 1
+}
+```
+
+Output:
+
+```json
+{
+  "status": "VERIFIED_UPDATE",
+  "ecosystem": "npm",
+  "directory": ".",
+  "dependency": {
+    "name": "lodash",
+    "from": "4.17.19",
+    "to": "4.17.21",
+    "relationship": "direct"
+  },
+  "vulnerabilities": [
+    {
+      "id": "CVE-2021-23337",
+      "severity": "High"
+    }
+  ],
+  "changed_files": [
+    "package.json",
+    "package-lock.json"
+  ],
+  "verification": {
+    "target_findings_removed": true,
+    "new_critical_findings": 0,
+    "dependency_files_valid": true
+  }
+}
+```
+
+## Security Workflows
+
+Input:
+
+```text
+Caller repository workspace
+GitHub token
+Reusable workflow inputs
+remediation-core result.json
+```
+
+Output:
+
+```text
+Git branch
+Git commit
+Pull Request
+GitHub job summary
+SBOM artifacts
+Scan artifacts
+```
+
+---
+
+# 9. Goals
+
+## 9.1 Primary Goals
+
+Produk harus dapat:
+
+1. mendeteksi dependency dan versinya;
+2. mendeteksi vulnerability dependency;
+3. mengelompokkan finding berdasarkan package;
+4. menentukan minimum safe version;
+5. memperbarui dependency menggunakan package manager asli;
+6. menghasilkan manifest dan lockfile valid;
+7. melakukan scan ulang;
+8. memastikan target vulnerability sudah hilang;
+9. menghasilkan structured remediation result;
+10. membuat Pull Request melalui centralized GitHub workflow;
+11. mendukung penambahan ecosystem baru;
+12. mendukung penambahan provider baru;
+13. berjalan tanpa database pada versi awal;
+14. dijalankan secara lokal tanpa GitHub credentials;
+15. dijalankan sebagai immutable container image.
+
+## 9.2 Secondary Goals
+
+Produk nantinya dapat:
+
+* mendukung Go Modules;
+* mendukung Python Poetry atau uv;
+* mendukung Maven;
+* mendukung Cargo;
+* mendukung Gradle;
+* mendukung GitLab;
+* mendukung Bitbucket;
+* memperbarui existing remediation requests;
+* menangani transitive dependency;
+* menangani private registry;
+* menjalankan trusted repository tests;
+* menyediakan grouped updates;
+* menyediakan optional auto-merge policy.
+
+---
+
+# 10. Non-Goals
+
+Versi pertama tidak akan:
+
+* melakukan automatic merge;
+* memperbaiki source code aplikasi;
+* memperbaiki vulnerability tanpa known fix;
+* mendukung semua package manager sekaligus;
+* menangani npm workspaces;
+* menangani monorepo kompleks;
+* menyediakan dashboard;
+* membutuhkan PostgreSQL;
+* membutuhkan Redis;
+* membutuhkan message queue;
+* membutuhkan Kubernetes;
+* membutuhkan long-running service;
+* menjadi SaaS multi-tenant;
+* menggantikan seluruh fitur Dependabot;
+* menjalankan arbitrary repository scripts secara default;
+* melakukan remediation pada transitive dependency;
+* melakukan major dependency updates.
+
+---
+
+# 11. Core Design Principles
+
+## 11.1 Provider-Agnostic Core
+
+Remediation core tidak boleh mengetahui:
+
+* GitHub Actions;
+* GitHub API;
+* GitLab API;
+* `GITHUB_TOKEN`;
+* Pull Request;
+* Merge Request;
+* organization repository settings.
+
+Core hanya menerima workspace dan configuration, lalu menghasilkan changes dan structured result.
+
+## 11.2 Ecosystem Adapter Architecture
+
+Setiap package manager memiliki adapter tersendiri.
+
+Planned adapters:
+
+```text
+npm
+Go Modules
+Poetry
+uv
+Maven
+Cargo
+Gradle
+```
+
+Penambahan adapter baru tidak boleh mengubah orchestration utama.
+
+## 11.3 CI/CD and Provider Separation
+
+Centralized workflows adalah delivery adapters.
+
+Implementasi awal:
+
+```text
+GitHub reusable workflow
+```
+
+Implementasi berikutnya dapat berupa:
+
+```text
+GitLab CI template
+Jenkins Shared Library
+Tekton Task
+Bitbucket Pipeline
+Azure DevOps template
+```
+
+## 11.4 Stateless Core Execution
+
+Satu core execution harus:
+
+* menerima satu workspace;
+* menerima satu configuration;
+* menjalankan satu remediation cycle;
+* menghasilkan satu result;
+* tidak membutuhkan database;
+* tidak menyimpan permanent state;
+* dapat dijalankan ulang;
+* tidak membutuhkan provider token.
+
+## 11.5 Minimum Safe Version
+
+Default update strategy:
+
+```text
+minimum-safe
+```
+
+Sistem harus memilih versi minimum yang:
+
+* tersedia pada package registry;
+* memperbaiki seluruh target findings;
+* bukan prerelease;
+* sesuai update policy;
+* dapat diterapkan package manager;
+* dapat diverifikasi ulang.
+
+## 11.6 Verify Before Delivery
+
+Pull Request hanya boleh dibuat jika:
+
+* dependency berhasil diperbarui;
+* target vulnerability hilang;
+* target version sesuai;
+* dependency files valid;
+* tidak ada unexpected file changes;
+* tidak ada Critical vulnerability baru.
+
+---
+
+# 12. Remediation Core Repository Structure
+
+Target repository path:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/remediation-core
+```
+
+Target structure:
+
+```text
+remediation-core/
+├── cmd/
+│   └── remediate/
+│       └── main.go
+│
+├── internal/
+│   ├── core/
+│   │   ├── engine.go
+│   │   ├── job.go
+│   │   └── result.go
+│   │
+│   ├── inventory/
+│   │   └── syft/
+│   │       └── inventory.go
+│   │
+│   ├── scanner/
+│   │   └── grype/
+│   │       └── scanner.go
+│   │
+│   ├── findings/
+│   │   ├── normalizer.go
+│   │   └── grouping.go
+│   │
+│   ├── resolver/
+│   │   ├── version.go
+│   │   └── policy.go
+│   │
+│   ├── verifier/
+│   │   └── verifier.go
+│   │
+│   └── ecosystems/
+│       ├── ecosystem.go
+│       └── npm/
+│           ├── detector.go
+│           ├── parser.go
+│           ├── registry.go
+│           ├── updater.go
+│           └── validator.go
+│
+├── schemas/
+│   ├── job.schema.json
+│   └── result.schema.json
+│
+├── testdata/
+│   ├── npm-vulnerable/
+│   └── npm-clean/
+│
+├── Dockerfile
+├── Makefile
+├── go.mod
+├── go.sum
+└── README.md
+```
+
+---
+
+# 13. Security Workflows Repository Structure
+
+Target repository path:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/security-workflows
+```
+
+Target structure:
+
+```text
+security-workflows/
+├── .github/
+│   └── workflows/
+│       ├── dependency-remediation.yml
+│       └── dependency-scan.yml
+│
+├── scripts/
+│   ├── create-branch.sh
+│   ├── create-pr.sh
+│   ├── update-pr.sh
+│   ├── generate-pr-body.sh
+│   └── write-job-summary.sh
+│
+├── examples/
+│   ├── caller-basic.yml
+│   ├── caller-custom.yml
+│   ├── caller-monorepo.yml
+│   └── remediation-config.yml
+│
+└── README.md
+```
+
+---
+
+# 14. Consumer Repository Experience
+
+Application repository hanya membutuhkan caller workflow kecil.
+
+```yaml
+name: Dependency Remediation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 1-5"
+
+jobs:
+  remediate:
+    uses: opsbento/security-workflows/.github/workflows/dependency-remediation.yml@v1
+```
+
+Optional inputs:
+
+```yaml
+jobs:
+  remediate:
+    uses: opsbento/security-workflows/.github/workflows/dependency-remediation.yml@v1
+    with:
+      working-directory: "."
+      minimum-severity: high
+      allow-major: false
+      maximum-updates: 1
+```
+
+Application repository tidak boleh menyimpan:
+
+* instalasi Syft;
+* instalasi Grype;
+* raw Grype parsing;
+* version resolution;
+* package manager update commands;
+* Pull Request creation scripts;
+* remediation verification logic.
+
+---
+
+# 15. Configuration File
+
+Gunakan provider-neutral configuration file:
+
+```text
+.remediation.yml
+```
+
+Contoh:
+
+```yaml
+version: 1
+
+updates:
+  - ecosystem: auto
+    directory: /
+    minimum-severity: high
+    strategy: minimum-safe
+    allow-major: false
+    maximum-updates: 1
+```
+
+Future multi-directory example:
+
+```yaml
+version: 1
+
+updates:
+  - ecosystem: npm
+    directory: /frontend
+
+  - ecosystem: gomod
+    directory: /services/api
+
+  - ecosystem: maven
+    directory: /services/payment
+```
+
+---
+
+# 16. Inventory and Vulnerability Detection
+
+## 16.1 Dependency Inventory
+
+Syft digunakan untuk membuat dependency inventory.
+
+Internal format:
+
+```bash
+syft dir:. -o syft-json=sbom.json
+```
+
+Evidence format:
+
+```bash
+syft dir:. -o cyclonedx-json=sbom.cdx.json
+```
+
+Normalized package:
+
+```json
+{
+  "name": "lodash",
+  "version": "4.17.19",
+  "ecosystem": "npm",
+  "purl": "pkg:npm/lodash@4.17.19",
+  "locations": [
+    "package-lock.json"
+  ]
+}
+```
+
+## 16.2 Vulnerability Scan
+
+Grype memindai SBOM:
+
+```bash
+grype sbom:sbom.json -o json > findings.json
+```
+
+Required fields:
+
+* artifact name;
+* installed version;
+* artifact type;
+* vulnerability identifier;
+* severity;
+* fix state;
+* known fixed versions.
+
+---
+
+# 17. Version Resolution
+
+Resolver tidak boleh langsung menggunakan fix version pertama dari Grype.
+
+Resolution flow:
+
+```text
+Collect findings for package
+        ↓
+Read known fix versions
+        ↓
+Query package registry
+        ↓
+Remove unavailable versions
+        ↓
+Remove prereleases
+        ↓
+Apply patch/minor/major policy
+        ↓
+Select minimum safe candidate
+        ↓
+Apply package-manager update
+        ↓
+Re-scan and verify
+```
+
+Example:
+
+```text
+Current version        4.17.19
+Fix for finding A      4.17.20
+Fix for finding B      4.17.21
+Selected version       4.17.21
+```
+
+Default:
+
+```text
+strategy      minimum-safe
+allow-major   false
+```
+
+---
+
+# 18. npm Adapter v0.1
+
+## Supported Files
+
+```text
+package.json
+package-lock.json
+```
+
+## Supported Dependency Types
+
+```text
+dependencies
+devDependencies
+optionalDependencies
+```
+
+Only direct dependencies are supported.
+
+## Registry Query
+
+```bash
+npm view PACKAGE versions --json
+```
+
+## Update Command
+
+```bash
+npm install PACKAGE@TARGET_VERSION \
+  --save-exact \
+  --ignore-scripts
+```
+
+## Validation
+
+```bash
+npm install \
+  --package-lock-only \
+  --ignore-scripts
+```
+
+## Allowed Changed Files
+
+```text
+package.json
+package-lock.json
+```
+
+## Unsupported in v0.1
+
+* npm workspaces;
+* peer-dependency remediation;
+* transitive dependency overrides;
+* package aliases;
+* git dependencies;
+* local file dependencies;
+* private registries;
+* lifecycle scripts;
+* major updates.
+
+---
+
+# 19. Verification Requirements
+
+Setelah update, remediation-core harus:
+
+1. membuat SBOM baru;
+2. menjalankan Grype kembali;
+3. memverifikasi target package version;
+4. memastikan target vulnerabilities sudah hilang;
+5. membandingkan Critical findings sebelum dan sesudah;
+6. memvalidasi dependency files;
+7. memvalidasi changed-file allowlist.
+
+Verification tidak boleh hanya bergantung pada:
+
+```bash
+grype --fail-on high
+```
+
+Verification harus target-specific.
+
+Example:
+
+```text
+Before:
+lodash 4.17.19
+CVE-A High
+CVE-B High
+
+After:
+lodash 4.17.21
+CVE-A absent
+CVE-B absent
+
+Result:
+VERIFIED_UPDATE
+```
+
+---
+
+# 20. Pull Request Delivery
+
+Pull Request delivery berada di `security-workflows`.
+
+## Branch Naming
+
+```text
+<product-name>/<ecosystem>/<package>-<target-version>
+```
+
+Temporary example:
+
+```text
+remediation/npm/lodash-4.17.21
+```
+
+## Commit Message
+
+```text
+fix(deps): update lodash from 4.17.19 to 4.17.21
+```
+
+## Pull Request Title
+
+```text
+Update lodash from 4.17.19 to 4.17.21
+```
+
+## Pull Request Body
+
+```markdown
+## Automated dependency remediation
+
+Updates `lodash` from `4.17.19` to `4.17.21`.
+
+### Vulnerabilities addressed
+
+| Advisory | Severity |
+|---|---:|
+| CVE-2021-23337 | High |
+
+### Why this version?
+
+`4.17.21` is the minimum available version that resolves all selected findings.
+
+### Verification
+
+- Dependency manifest updated
+- Lockfile regenerated
+- SBOM regenerated with Syft
+- Target findings no longer detected by Grype
+- No new Critical findings introduced
+```
+
+---
+
+# 21. Deduplication Without Database
+
+No database is required for v0.1.
+
+State is derived from:
+
+* deterministic branch name;
+* existing Pull Request;
+* hidden PR metadata;
+* repository default branch state.
+
+Flow:
+
+```text
+No matching PR
+    ↓
+Create branch and PR
+
+Matching open PR exists
+    ↓
+Update branch or skip
+
+PR merged
+    ↓
+Next scan should no longer detect target finding
+
+PR closed without merge
+    ↓
+Do not automatically recreate by default
+```
+
+---
+
+# 22. Security Requirements
+
+## No Automatic Merge
+
+The system only creates a reviewable Change Request.
+
+## No Lifecycle Scripts
+
+npm lifecycle scripts must be disabled:
+
+```text
+--ignore-scripts
+```
+
+## Credential Separation
+
+`remediation-core` must not require GitHub credentials.
+
+GitHub credentials belong only to `security-workflows`.
+
+## Least Privilege
+
+Required permissions:
+
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+```
+
+## Third-Party Action Pinning
+
+Production reusable workflow must pin third-party actions to full commit SHA.
+
+## Workspace Isolation
+
+Each remediation run must use a temporary or isolated workspace.
+
+## Changed-File Allowlist
+
+Unexpected file changes must fail the remediation.
+
+## No Arbitrary Test Execution
+
+Application test commands are disabled by default.
+
+## Known Fix Required
+
+Findings without a known fixed version are reported but not automatically updated.
+
+---
+
+# 23. Delivery Phases
+
+## Phase 1: Repository Foundation
+
+Repositories:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/remediation-core
+
+/Users/riowiraldhani/Documents/GitHub/security-workflows
+```
+
+Deliverables:
+
+* verify Git remotes;
+* create initial folder structure;
+* add README files;
+* add contribution guidance;
+* define initial licenses;
+* add basic CI;
+* define core-to-workflow compatibility.
+
+## Phase 2: Remediation Core Prototype
+
+Deliverables:
+
+* Go CLI;
+* job model;
+* result model;
+* Syft integration;
+* Grype integration;
+* finding normalization;
+* npm direct-dependency adapter;
+* minimum-safe resolver;
+* update verification;
+* result.json;
+* unit and fixture tests.
+
+No Pull Request creation.
+
+## Phase 3: Core Container Release
+
+Deliverables:
+
+* Dockerfile;
+* container build;
+* GHCR publishing;
+* semantic version tag;
+* immutable image digest;
+* local usage documentation.
+
+Example:
+
+```text
+ghcr.io/opsbento/remediation-core:v0.1.0
+```
+
+## Phase 4: Centralized GitHub Workflow
+
+Deliverables:
+
+* reusable workflow;
+* pinned core image;
+* caller workflow example;
+* branch creation;
+* commit creation;
+* Pull Request creation;
+* deduplication;
+* artifact upload;
+* GitHub job summary.
+
+## Phase 5: End-to-End Testing
+
+Test cases:
+
+* vulnerable direct npm dependency with patch fix;
+* vulnerable direct npm dependency with minor fix;
+* major-only fix blocked;
+* no known fix;
+* transitive dependency skipped;
+* unexpected file modification rejected;
+* target finding remains after update;
+* no finding;
+* duplicate PR prevention.
+
+## Phase 6: Additional Ecosystems
+
+Order:
+
+```text
+Go Modules
+Python Poetry or uv
+Maven
+Cargo
+Gradle
+```
+
+## Phase 7: GitLab Integration
+
+Reuse:
+
+```text
+remediation-core container
+```
+
+Add:
+
+```text
+GitLab CI template
+GitLab Merge Request delivery adapter
+```
+
+---
+
+# 24. Immediate Implementation Backlog
+
+## Remediation Core
+
+Working directory:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/remediation-core
+```
+
+Initial backlog:
+
+```text
+RC-001 Initialize Go module
+RC-002 Define Job model
+RC-003 Define Result model
+RC-004 Add JSON schemas
+RC-005 Add command-line interface
+RC-006 Implement Syft runner
+RC-007 Implement Grype runner
+RC-008 Normalize Grype findings
+RC-009 Group findings by dependency
+RC-010 Define ecosystem interface
+RC-011 Implement npm dependency parser
+RC-012 Implement npm registry client
+RC-013 Implement minimum-safe resolver
+RC-014 Implement npm updater
+RC-015 Add changed-file guard
+RC-016 Implement before/after verifier
+RC-017 Add npm vulnerable fixture
+RC-018 Add npm clean fixture
+RC-019 Add Dockerfile
+RC-020 Publish v0.1.0 container
+```
+
+## Security Workflows
+
+Working directory:
+
+```text
+/Users/riowiraldhani/Documents/GitHub/security-workflows
+```
+
+Initial backlog:
+
+```text
+SW-001 Create reusable workflow
+SW-002 Define workflow_call inputs
+SW-003 Checkout caller repository
+SW-004 Run pinned remediation-core image
+SW-005 Read result.json
+SW-006 Handle NO_FINDING result
+SW-007 Handle skip and failure results
+SW-008 Create deterministic branch
+SW-009 Commit changed dependency files
+SW-010 Push remediation branch
+SW-011 Detect existing Pull Request
+SW-012 Create Pull Request
+SW-013 Generate Pull Request body
+SW-014 Upload SBOM and scan artifacts
+SW-015 Write GitHub job summary
+SW-016 Add basic caller example
+SW-017 Add custom caller example
+SW-018 Document organization access settings
+SW-019 Pin third-party actions
+SW-020 Tag workflow release v1.0.0
+```
+
+---
+
+# 25. MVP Acceptance Criteria
+
+The MVP is complete when:
+
+1. both local repositories contain committed project structures;
+2. remediation-core can run locally;
+3. remediation-core does not require GitHub credentials;
+4. a Node.js fixture contains a direct vulnerable dependency;
+5. Syft identifies the dependency;
+6. Grype identifies a High or Critical vulnerability;
+7. the finding has a known fixed version;
+8. the resolver confirms the target exists in the npm registry;
+9. the resolver selects the minimum safe patch or minor version;
+10. npm updates package.json;
+11. npm updates package-lock.json;
+12. lifecycle scripts are not executed;
+13. only allowed files change;
+14. Syft generates an updated SBOM;
+15. Grype no longer detects the target vulnerability;
+16. no new Critical vulnerability is introduced;
+17. remediation-core produces result.json;
+18. remediation-core is published as a pinned container image;
+19. security-workflows invokes the pinned container;
+20. security-workflows creates a deterministic branch;
+21. security-workflows creates a Pull Request;
+22. rerunning the workflow does not create a duplicate Pull Request;
+23. workflow artifacts contain before and after scan evidence;
+24. application repositories only require a small caller workflow.
+
+---
+
+# 26. Release and Compatibility
+
+## Remediation Core
+
+Semantic versioning:
+
+```text
+v0.1.0
+v0.2.0
+v1.0.0
+```
+
+Distribution:
+
+```text
+GitHub release binary
+GHCR container image
+```
+
+## Security Workflows
+
+Workflow releases:
+
+```text
+v1.0.0
+v1
+```
+
+Consumer example:
+
+```yaml
+uses: opsbento/security-workflows/.github/workflows/dependency-remediation.yml@v1
+```
+
+Pinned engine:
+
+```text
+security-workflows v1.0.0
+        ↓
+remediation-core v0.1.0
+```
+
+Compatibility matrix:
+
+| Security Workflows | Remediation Core | Status           |
+| ------------------ | ---------------- | ---------------- |
+| v1.0.0             | v0.1.0           | Planned          |
+| v1.1.0             | v0.2.0           | Future           |
+| v1.1.0             | v0.1.0           | To be determined |
+
+---
+
+# 27. Recommended Technical Decisions
+
+```text
+Core language             Go
+Core delivery             Binary and container
+Inventory                 Syft
+Scanner                   Grype
+Internal SBOM             Syft JSON
+Evidence SBOM             CycloneDX JSON
+First ecosystem           npm
+First CI provider         GitHub Actions
+First Git provider        GitHub
+Workflow model            Reusable workflow
+Configuration             .remediation.yml
+Update strategy           minimum-safe
+Allowed updates           patch and minor
+PR granularity            one package per PR
+Database                  none
+Queue                     none
+Auto-merge                disabled
+Install scripts           disabled
+```
+
+---
+
+# 28. Final Repository Mapping
+
+```text
+/Users/riowiraldhani/Documents/GitHub/
+├── remediation-core/
+│   ├── dependency remediation engine
+│   ├── ecosystem adapters
+│   ├── Syft and Grype integration
+│   ├── verification
+│   ├── CLI
+│   └── container image
+│
+└── security-workflows/
+    ├── centralized reusable workflows
+    ├── GitHub orchestration
+    ├── branch and commit delivery
+    ├── Pull Request creation
+    ├── artifact upload
+    └── caller examples
+```
+
+End-to-end relationship:
+
+```text
+Application Repository
+        ↓
+opsbento/security-workflows
+        ↓
+ghcr.io/opsbento/remediation-core:<pinned-version>
+        ↓
+Verified dependency changes
+        ↓
+GitHub Pull Request
+```

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsbento.github.io/remediation-core/schemas/result.schema.json",
+  "title": "Remediation Result",
+  "type": "object",
+  "required": ["status", "directory"],
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["NO_FINDING", "VERIFIED_UPDATE", "SKIPPED", "FAILED", "UNSUPPORTED", "NEEDS_MANUAL_REVIEW"]
+    },
+    "ecosystem": { "type": "string" },
+    "directory": { "type": "string" },
+    "dependency": {
+      "type": "object",
+      "required": ["name", "from", "to", "relationship"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "relationship": { "type": "string" }
+      }
+    },
+    "vulnerabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string" }
+        }
+      }
+    },
+    "changed_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["target_findings_removed", "new_critical_findings", "dependency_files_valid"],
+      "additionalProperties": false,
+      "properties": {
+        "target_findings_removed": { "type": "boolean" },
+        "new_critical_findings": { "type": "integer", "minimum": 0 },
+        "dependency_files_valid": { "type": "boolean" }
+      }
+    },
+    "message": { "type": "string" }
+  }
+}

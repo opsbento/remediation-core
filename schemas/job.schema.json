@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opsbento.github.io/remediation-core/schemas/job.schema.json",
+  "title": "Remediation Job",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "directory": { "type": "string", "default": "." },
+    "ecosystem": { "type": "string", "enum": ["auto", "npm"], "default": "auto" },
+    "minimum_severity": {
+      "type": "string",
+      "enum": ["low", "medium", "moderate", "high", "critical"],
+      "default": "high"
+    },
+    "strategy": { "type": "string", "enum": ["minimum-safe"], "default": "minimum-safe" },
+    "allow_major": { "type": "boolean", "default": false },
+    "maximum_updates": { "type": "integer", "minimum": 1, "default": 1 },
+    "output": { "type": "string", "default": "result.json" },
+    "artifact_directory": { "type": "string" }
+  }
+}

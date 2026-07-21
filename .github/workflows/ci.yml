@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build ./cmd/remediate
+
+  e2e-npm:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+
+      - name: Install Syft and Grype
+        run: |
+          set -euo pipefail
+          arch="$(uname -m)"
+          case "$arch" in
+            x86_64) platform="linux_amd64" ;;
+            aarch64|arm64) platform="linux_arm64" ;;
+            *) echo "unsupported architecture: $arch" >&2; exit 1 ;;
+          esac
+          syft_version="1.48.0"
+          grype_version="0.116.0"
+          curl -fsSL "https://github.com/anchore/syft/releases/download/v${syft_version}/syft_${syft_version}_${platform}.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin syft
+          curl -fsSL "https://github.com/anchore/grype/releases/download/v${grype_version}/grype_${grype_version}_${platform}.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin grype
+
+      - name: Build remediation CLI
+        run: go build -o "$RUNNER_TEMP/remediate" ./cmd/remediate
+
+      - name: Run npm remediation fixture
+        run: |
+          set -euo pipefail
+          workspace="$RUNNER_TEMP/npm-vulnerable"
+          cp -R testdata/npm-vulnerable "$workspace"
+          cd "$workspace"
+          "$RUNNER_TEMP/remediate" \
+            --directory . \
+            --ecosystem npm \
+            --minimum-severity high \
+            --strategy minimum-safe \
+            --allow-major=false \
+            --maximum-updates 1 \
+            --artifact-directory reports \
+            --output result.json
+          test "$(jq -r '.status' result.json)" = "VERIFIED_UPDATE"
+          test "$(jq -r '.dependency.name' result.json)" = "lodash"
+          test "$(jq -r '.verification.target_findings_removed' result.json)" = "true"
+          test -f reports/sbom.before.json
+          test -f reports/findings.before.json
+          test -f reports/sbom.after.json
+          test -f reports/findings.after.json
+
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-remediation-e2e
+          path: |
+            ${{ runner.temp }}/npm-vulnerable/result.json
+            ${{ runner.temp }}/npm-vulnerable/reports/*
