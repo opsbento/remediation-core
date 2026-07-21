@@ -15,3 +15,19 @@ func TestGuardAllowedRejectsUnexpectedFile(t *testing.T) {
 		t.Fatal("expected unexpected file error")
 	}
 }
+
+func TestPorcelainPath(t *testing.T) {
+	tests := map[string]string{
+		" M package-lock.json":                "package-lock.json",
+		"M  package-lock.json":                "package-lock.json",
+		"M package-lock.json":                 "package-lock.json",
+		"?? package.json":                     "package.json",
+		"R  old-package.json -> package.json": "package.json",
+	}
+
+	for input, want := range tests {
+		if got := porcelainPath(input); got != want {
+			t.Fatalf("porcelainPath(%q) = %q, want %q", input, got, want)
+		}
+	}
+}

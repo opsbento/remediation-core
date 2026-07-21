@@ -28,12 +28,35 @@ func ChangedFiles(ctx context.Context, repoRoot string) ([]string, error) {
 	}
 	var files []string
 	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
-		if strings.TrimSpace(line) == "" || len(line) < 4 {
+		path := porcelainPath(line)
+		if path == "" {
 			continue
 		}
-		files = append(files, strings.TrimSpace(line[3:]))
+		files = append(files, path)
 	}
 	return files, nil
+}
+
+func porcelainPath(line string) string {
+	if strings.TrimSpace(line) == "" {
+		return ""
+	}
+
+	var path string
+	if len(line) >= 4 && line[2] == ' ' {
+		path = strings.TrimSpace(line[3:])
+	} else {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			return ""
+		}
+		path = fields[1]
+	}
+
+	if _, newPath, ok := strings.Cut(path, " -> "); ok {
+		path = newPath
+	}
+	return strings.TrimSpace(path)
 }
 
 func GuardAllowed(files []string, allowed []string) error {
