@@ -34,6 +34,7 @@ type Result struct {
 	Ecosystem       string          `json:"ecosystem"`
 	Directory       string          `json:"directory"`
 	Dependency      *Dependency     `json:"dependency,omitempty"`
+	Dependencies    []Dependency    `json:"dependencies,omitempty"`
 	Vulnerabilities []Vulnerability `json:"vulnerabilities,omitempty"`
 	ChangedFiles    []string        `json:"changed_files,omitempty"`
 	Verification    *Verification   `json:"verification,omitempty"`

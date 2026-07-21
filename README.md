@@ -16,7 +16,7 @@ Provider-agnostic dependency remediation engine distributed as a pinned CLI rele
 
 | Security Workflows | Remediation Core | Status |
 | --- | --- | --- |
-| v1.0.0 | v0.1.1 | Planned |
+| v1.0.0 | v0.2.0 | Planned |
 
 ## CLI Usage
 
@@ -27,7 +27,7 @@ go run ./cmd/remediate \
   --minimum-severity high \
   --strategy minimum-safe \
   --allow-major=false \
-  --maximum-updates 1 \
+  --maximum-updates 5 \
   --artifact-directory reports \
   --output result.json
 ```
@@ -74,7 +74,7 @@ Tagged releases publish Linux CLI binaries:
 
 `security-workflows` downloads the pinned release asset instead of building `remediation-core` from source on every run.
 
-Use `v0.1.1` or newer for quiet Syft directory scans with explicit source metadata.
+Use `v0.2.0` or newer for severity-prioritized multi-dependency remediation.
 
 Release notes can be stored in `docs/releases/<tag>.md`; the release workflow uses that file when creating or updating the GitHub Release.
 
@@ -83,7 +83,7 @@ Release notes can be stored in `docs/releases/<tag>.md`; the release workflow us
 `security-workflows` invokes this project as:
 
 ```text
-GitHub Release: opsbento/remediation-core v0.1.1
+GitHub Release: opsbento/remediation-core v0.2.0
 Asset: remediate-linux-amd64
 ```
 

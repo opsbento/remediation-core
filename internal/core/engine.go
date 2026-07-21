@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/opsbento/remediation-core/internal/ecosystems"
@@ -93,31 +95,58 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 	if len(groups) == 0 {
 		return Result{Status: StatusNoFinding, Ecosystem: adapter.Name(), Directory: job.Directory}, nil
 	}
-	if len(groups) > job.MaximumUpdates {
-		groups = groups[:job.MaximumUpdates]
-	}
+	sortGroupsByPriority(groups)
 
 	deps, err := adapter.Parse(workdir)
 	if err != nil {
 		return failed(job, err), err
 	}
-	group := groups[0]
-	current, ok := verifier.HasDirectDependency(deps, group.PackageName)
-	if !ok {
+
+	updates := []Dependency{}
+	selectedGroups := []findings.Group{}
+	manualReasons := []string{}
+	for _, group := range groups {
+		if len(updates) >= job.MaximumUpdates {
+			break
+		}
+		current, ok := verifier.HasDirectDependency(deps, group.PackageName)
+		if !ok {
+			continue
+		}
+		target, err := resolver.ResolveMinimumSafe(group, e.Registry, resolver.Policy{AllowMajor: job.AllowMajor})
+		if err != nil {
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: %s", group.PackageName, err.Error()))
+			continue
+		}
+
+		updateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+		err = adapter.Update(updateCtx, workdir, group.PackageName, target)
+		cancel()
+		if err != nil {
+			return failed(job, fmt.Errorf("update dependency %s: %w", group.PackageName, err)), err
+		}
+		updates = append(updates, Dependency{
+			Name:         group.PackageName,
+			From:         current.Version,
+			To:           target,
+			Relationship: current.Relationship,
+		})
+		selectedGroups = append(selectedGroups, group)
+		for i := range deps {
+			if deps[i].Name == group.PackageName {
+				deps[i].Version = target
+			}
+		}
+	}
+	if len(updates) == 0 {
+		if len(manualReasons) > 0 {
+			return Result{Status: StatusNeedsManual, Ecosystem: adapter.Name(), Directory: job.Directory, Message: strings.Join(manualReasons, "; ")}, nil
+		}
 		return Result{Status: StatusSkipped, Ecosystem: adapter.Name(), Directory: job.Directory, Message: "only direct dependencies are supported"}, nil
 	}
-
-	target, err := resolver.ResolveMinimumSafe(group, e.Registry, resolver.Policy{AllowMajor: job.AllowMajor})
-	if err != nil {
-		return Result{Status: StatusNeedsManual, Ecosystem: adapter.Name(), Directory: job.Directory, Message: err.Error()}, nil
-	}
-
-	updateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	defer cancel()
-	if err := adapter.Update(updateCtx, workdir, group.PackageName, target); err != nil {
-		return failed(job, fmt.Errorf("update dependency: %w", err)), err
-	}
-	valid := adapter.Validate(updateCtx, workdir) == nil
+	validateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	valid := adapter.Validate(validateCtx, workdir) == nil
+	cancel()
 
 	afterSBOM := filepath.Join(artifactDir, "sbom.after.json")
 	afterEvidence := filepath.Join(artifactDir, "sbom.after.cdx.json")
@@ -151,13 +180,20 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 		}
 	}
 
-	vulns := vulnerabilities(group.Findings)
-	vulnIDs := make([]string, 0, len(vulns))
-	for _, vuln := range vulns {
-		vulnIDs = append(vulnIDs, vuln.ID)
+	vulns := vulnerabilitiesForGroups(selectedGroups)
+	removed := true
+	for _, group := range selectedGroups {
+		vulnIDs := make([]string, 0, len(group.Findings))
+		for _, finding := range group.Findings {
+			vulnIDs = append(vulnIDs, finding.VulnerabilityID)
+		}
+		if !verifier.TargetFindingsRemoved(after, group.PackageName, vulnIDs) {
+			removed = false
+			break
+		}
 	}
 	verification := Verification{
-		TargetFindingsRemoved: verifier.TargetFindingsRemoved(after, group.PackageName, vulnIDs),
+		TargetFindingsRemoved: removed,
 		NewCriticalFindings:   verifier.NewCriticalFindings(before, after),
 		DependencyFilesValid:  valid,
 	}
@@ -167,15 +203,11 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 	}
 
 	return Result{
-		Status:    status,
-		Ecosystem: adapter.Name(),
-		Directory: job.Directory,
-		Dependency: &Dependency{
-			Name:         group.PackageName,
-			From:         current.Version,
-			To:           target,
-			Relationship: current.Relationship,
-		},
+		Status:          status,
+		Ecosystem:       adapter.Name(),
+		Directory:       job.Directory,
+		Dependency:      &updates[0],
+		Dependencies:    updates,
 		Vulnerabilities: vulns,
 		ChangedFiles:    changed,
 		Verification:    &verification,
@@ -250,6 +282,60 @@ func vulnerabilities(fs []findings.Finding) []Vulnerability {
 		out = append(out, Vulnerability{ID: finding.VulnerabilityID, Severity: finding.Severity})
 	}
 	return out
+}
+
+func vulnerabilitiesForGroups(groups []findings.Group) []Vulnerability {
+	seen := map[string]bool{}
+	var out []Vulnerability
+	for _, group := range groups {
+		for _, finding := range group.Findings {
+			if seen[finding.VulnerabilityID] {
+				continue
+			}
+			seen[finding.VulnerabilityID] = true
+			out = append(out, Vulnerability{ID: finding.VulnerabilityID, Severity: finding.Severity})
+		}
+	}
+	return out
+}
+
+func sortGroupsByPriority(groups []findings.Group) {
+	sort.SliceStable(groups, func(i, j int) bool {
+		left := groupRank(groups[i])
+		right := groupRank(groups[j])
+		if left != right {
+			return left > right
+		}
+		if len(groups[i].Findings) != len(groups[j].Findings) {
+			return len(groups[i].Findings) > len(groups[j].Findings)
+		}
+		return groups[i].PackageName < groups[j].PackageName
+	})
+}
+
+func groupRank(group findings.Group) int {
+	rank := 0
+	for _, finding := range group.Findings {
+		if current := severityRank(finding.Severity); current > rank {
+			rank = current
+		}
+	}
+	return rank
+}
+
+func severityRank(severity string) int {
+	switch strings.ToLower(severity) {
+	case "critical":
+		return 4
+	case "high":
+		return 3
+	case "medium":
+		return 2
+	case "low":
+		return 1
+	default:
+		return 0
+	}
 }
 
 func failed(job Job, err error) Result {

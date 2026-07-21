@@ -23,6 +23,20 @@
         "relationship": { "type": "string" }
       }
     },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "from", "to", "relationship"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "relationship": { "type": "string" }
+        }
+      }
+    },
     "vulnerabilities": {
       "type": "array",
       "items": {

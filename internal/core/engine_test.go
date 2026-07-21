@@ -62,8 +62,68 @@ func TestEngineVerifiedUpdate(t *testing.T) {
 	if result.Dependency == nil || result.Dependency.Name != "pkg" || result.Dependency.To != "1.0.1" {
 		t.Fatalf("unexpected dependency result: %#v", result.Dependency)
 	}
+	if len(result.Dependencies) != 1 || result.Dependencies[0].Name != "pkg" {
+		t.Fatalf("unexpected dependencies result: %#v", result.Dependencies)
+	}
 	if result.Verification == nil || !result.Verification.TargetFindingsRemoved || !result.Verification.DependencyFilesValid {
 		t.Fatalf("unexpected verification: %#v", result.Verification)
+	}
+}
+
+func TestEngineUpdatesMultipleDependenciesBySeverityPriority(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	engine := testEngine([]scanReport{
+		{findings: `{
+		  "matches": [
+		    {
+		      "vulnerability": {"id":"CVE-MEDIUM","severity":"Medium","fix":{"state":"fixed","versions":["1.0.1"]}},
+		      "artifact": {"name":"alpha","version":"1.0.0","type":"npm","language":"npm"}
+		    },
+		    {
+		      "vulnerability": {"id":"CVE-CRITICAL","severity":"Critical","fix":{"state":"fixed","versions":["1.0.1"]}},
+		      "artifact": {"name":"beta","version":"1.0.0","type":"npm","language":"npm"}
+		    },
+		    {
+		      "vulnerability": {"id":"CVE-HIGH","severity":"High","fix":{"state":"fixed","versions":["1.0.1"]}},
+		      "artifact": {"name":"gamma","version":"1.0.0","type":"npm","language":"npm"}
+		    }
+		  ]
+		}`},
+		{findings: `{"matches":[]}`},
+	})
+	engine.Adapters = []ecosystems.Adapter{
+		&fakeAdapter{
+			deps: []ecosystems.Dependency{
+				{Name: "alpha", Version: "1.0.0", Relationship: "direct", Section: "dependencies"},
+				{Name: "beta", Version: "1.0.0", Relationship: "direct", Section: "dependencies"},
+				{Name: "gamma", Version: "1.0.0", Relationship: "direct", Section: "dependencies"},
+			},
+			valid: true,
+		},
+	}
+
+	result, err := engine.Run(context.Background(), Job{
+		Directory:       ".",
+		Ecosystem:       "npm",
+		MinimumSeverity: "medium",
+		Strategy:        "minimum-safe",
+		MaximumUpdates:  2,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != StatusVerifiedUpdate {
+		t.Fatalf("got status %q, want %q: %s", result.Status, StatusVerifiedUpdate, result.Message)
+	}
+	if len(result.Dependencies) != 2 {
+		t.Fatalf("got %d dependencies, want 2: %#v", len(result.Dependencies), result.Dependencies)
+	}
+	if result.Dependencies[0].Name != "beta" || result.Dependencies[1].Name != "gamma" {
+		t.Fatalf("unexpected priority order: %#v", result.Dependencies)
+	}
+	if result.Dependency == nil || result.Dependency.Name != "beta" {
+		t.Fatalf("unexpected backward-compatible dependency: %#v", result.Dependency)
 	}
 }
 
