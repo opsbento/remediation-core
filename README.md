@@ -63,3 +63,13 @@ The CLI writes a JSON document matching `schemas/result.schema.json`. A verified
 ## CI-Driven Testing
 
 The canonical verification path is GitHub Actions. The CI workflow runs unit tests, builds the CLI, executes the npm remediation fixture with Syft and Grype, and uploads the before/after SBOM and scan reports.
+
+## CLI Release
+
+Tagged releases publish Linux CLI binaries:
+
+- `remediate-linux-amd64`
+- `remediate-linux-arm64`
+- `checksums.txt`
+
+`security-workflows` downloads the pinned release asset instead of building `remediation-core` from source on every run.

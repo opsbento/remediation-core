@@ -1,0 +1,6 @@
+.cache/
+remediate
+result.json
+reports/
+*.test
+*.prd

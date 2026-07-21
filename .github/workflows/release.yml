@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag, for example v0.1.0.
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.version || github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build Linux CLI assets
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o dist/remediate-linux-amd64 ./cmd/remediate
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o dist/remediate-linux-arm64 ./cmd/remediate
+          (cd dist && sha256sum remediate-linux-amd64 remediate-linux-arm64 > checksums.txt)
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/remediate-linux-amd64 dist/remediate-linux-arm64 dist/checksums.txt --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/remediate-linux-amd64 dist/remediate-linux-arm64 dist/checksums.txt \
+              --title "$RELEASE_TAG" \
+              --notes "remediation-core CLI release $RELEASE_TAG"
+          fi
