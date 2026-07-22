@@ -304,6 +304,7 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] remediation-demo berhasil rerun workflow dan update PR existing tanpa membuat PR duplicate.
 [Done] remediation-demo punya mixed dependency fixture untuk vulnerable dan non-vulnerable dependency.
 [Done] remediation-demo skips generic dependency scan gate for remediation/* Pull Requests.
+[Done] remediation-demo automation aligned with Dependabot model: scheduled remediation and scan gates on PR/push main.
 [Done] *.prd sudah ditambahkan ke .gitignore di repo terkait.
 [Done] README dan CONTRIBUTING tiga repo sudah disesuaikan dengan model CLI release.
 [Done] Commit terbaru dokumentasi/refactor sudah GPG-signed.
