@@ -12,7 +12,7 @@ const (
 	DefaultEcosystem       = "auto"
 	DefaultMinimumSeverity = "high"
 	DefaultStrategy        = "minimum-safe"
-	DefaultMaximumUpdates  = 5
+	DefaultMaximumUpdates  = 25
 )
 
 type Job struct {

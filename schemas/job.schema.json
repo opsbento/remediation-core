@@ -14,7 +14,7 @@
     },
     "strategy": { "type": "string", "enum": ["minimum-safe"], "default": "minimum-safe" },
     "allow_major": { "type": "boolean", "default": false },
-    "maximum_updates": { "type": "integer", "minimum": 1, "default": 5 },
+    "maximum_updates": { "type": "integer", "minimum": 1, "default": 25 },
     "output": { "type": "string", "default": "result.json" },
     "artifact_directory": { "type": "string" }
   }
