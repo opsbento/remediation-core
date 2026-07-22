@@ -8,7 +8,7 @@ import (
 )
 
 func (Adapter) Update(ctx context.Context, workdir, packageName, targetVersion string) error {
-	cmd := exec.CommandContext(ctx, "npm", "install", packageName+"@"+targetVersion, "--save-exact", "--ignore-scripts")
+	cmd := exec.CommandContext(ctx, "npm", "install", packageName+"@"+targetVersion, "--save-exact", "--package-lock-only", "--ignore-scripts")
 	cmd.Dir = workdir
 	cmd.Env = append(cmd.Environ(), "npm_config_fund=false", "npm_config_audit=false")
 	if raw, err := cmd.CombinedOutput(); err != nil {

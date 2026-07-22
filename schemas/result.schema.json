@@ -53,7 +53,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["dependency", "reason"],
+        "required": ["dependency", "reason", "candidates_checked", "target_findings_removed", "remaining_threshold_findings", "new_threshold_findings"],
         "additionalProperties": false,
         "properties": {
           "dependency": { "type": "string" },

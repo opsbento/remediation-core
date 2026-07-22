@@ -34,11 +34,11 @@ type Verification struct {
 type ManualReview struct {
 	Dependency                 string `json:"dependency"`
 	Reason                     string `json:"reason"`
-	CandidatesChecked          int    `json:"candidates_checked,omitempty"`
+	CandidatesChecked          int    `json:"candidates_checked"`
 	LastCandidate              string `json:"last_candidate,omitempty"`
-	TargetFindingsRemoved      bool   `json:"target_findings_removed,omitempty"`
-	RemainingThresholdFindings int    `json:"remaining_threshold_findings,omitempty"`
-	NewThresholdFindings       int    `json:"new_threshold_findings,omitempty"`
+	TargetFindingsRemoved      bool   `json:"target_findings_removed"`
+	RemainingThresholdFindings int    `json:"remaining_threshold_findings"`
+	NewThresholdFindings       int    `json:"new_threshold_findings"`
 }
 
 type Result struct {
