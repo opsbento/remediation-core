@@ -47,6 +47,13 @@ type remediationTarget struct {
 	Direct     bool
 }
 
+type candidateAssessment struct {
+	Version                    string
+	TargetFindingsRemoved      bool
+	RemainingThresholdFindings int
+	NewThresholdFindings       int
+}
+
 func NewEngine() Engine {
 	return Engine{
 		Inventory:     syft.Runner{},
@@ -114,18 +121,24 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 	}
 	updates := []Dependency{}
 	selectedGroups := []findings.Group{}
+	manualReviews := []ManualReview{}
 	for _, target := range targets {
 		if len(updates) >= job.MaximumUpdates {
 			break
 		}
 		candidates, err := e.candidates(target, job.AllowMajor)
 		if err != nil {
-			manualReasons = append(manualReasons, fmt.Sprintf("%s: %s", target.Dependency.Name, err.Error()))
+			reason := err.Error()
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: %s", target.Dependency.Name, reason))
+			manualReviews = append(manualReviews, ManualReview{Dependency: target.Dependency.Name, Reason: reason})
 			continue
 		}
 
 		var selected string
+		checked := 0
+		last := candidateAssessment{}
 		for _, candidate := range candidates {
+			checked++
 			updateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 			err = adapter.Update(updateCtx, workdir, target.Dependency.Name, candidate)
 			cancel()
@@ -148,14 +161,29 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 			if err != nil {
 				return failed(job, err), err
 			}
-			if allTargetFindingsRemoved(candidateAfter, target.Groups) &&
-				verifier.NewFindingsAtSeverity(before, candidateAfter, job.MinimumSeverity) == 0 {
+			last = candidateAssessment{
+				Version:                    candidate,
+				TargetFindingsRemoved:      allTargetFindingsRemoved(candidateAfter, target.Groups),
+				RemainingThresholdFindings: countFindingsAtSeverity(candidateAfter, job.MinimumSeverity),
+				NewThresholdFindings:       verifier.NewFindingsAtSeverity(before, candidateAfter, job.MinimumSeverity),
+			}
+			if last.TargetFindingsRemoved && last.NewThresholdFindings == 0 {
 				selected = candidate
 				break
 			}
 		}
 		if selected == "" {
-			manualReasons = append(manualReasons, fmt.Sprintf("%s: no candidate avoids new findings at or above %s", target.Dependency.Name, job.MinimumSeverity))
+			reason := fmt.Sprintf("no candidate removes target findings without new %s-or-higher findings", job.MinimumSeverity)
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: %s", target.Dependency.Name, reason))
+			manualReviews = append(manualReviews, ManualReview{
+				Dependency:                 target.Dependency.Name,
+				Reason:                     reason,
+				CandidatesChecked:          checked,
+				LastCandidate:              last.Version,
+				TargetFindingsRemoved:      last.TargetFindingsRemoved,
+				RemainingThresholdFindings: last.RemainingThresholdFindings,
+				NewThresholdFindings:       last.NewThresholdFindings,
+			})
 			rollbackCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 			err = adapter.Update(rollbackCtx, workdir, target.Dependency.Name, target.Dependency.Version)
 			cancel()
@@ -179,7 +207,7 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 	}
 	if len(updates) == 0 {
 		if len(manualReasons) > 0 {
-			return Result{Status: StatusNeedsManual, Ecosystem: adapter.Name(), Directory: job.Directory, Message: strings.Join(manualReasons, "; ")}, nil
+			return Result{Status: StatusNeedsManual, Ecosystem: adapter.Name(), Directory: job.Directory, ManualReviews: manualReviews, Message: strings.Join(manualReasons, "; ")}, nil
 		}
 		return Result{Status: StatusSkipped, Ecosystem: adapter.Name(), Directory: job.Directory, Message: "no supported direct or parent dependency remediation target found"}, nil
 	}
@@ -250,6 +278,7 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 		Dependency:      &updates[0],
 		Dependencies:    updates,
 		Vulnerabilities: vulns,
+		ManualReviews:   manualReviews,
 		ChangedFiles:    changed,
 		Verification:    &verification,
 		Message:         message,

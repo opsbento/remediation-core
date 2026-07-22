@@ -49,6 +49,23 @@
         }
       }
     },
+    "manual_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dependency", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "dependency": { "type": "string" },
+          "reason": { "type": "string" },
+          "candidates_checked": { "type": "integer", "minimum": 0 },
+          "last_candidate": { "type": "string" },
+          "target_findings_removed": { "type": "boolean" },
+          "remaining_threshold_findings": { "type": "integer", "minimum": 0 },
+          "new_threshold_findings": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
     "changed_files": {
       "type": "array",
       "items": { "type": "string" }

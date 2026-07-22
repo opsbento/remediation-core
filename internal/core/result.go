@@ -31,6 +31,16 @@ type Verification struct {
 	DependencyFilesValid       bool `json:"dependency_files_valid"`
 }
 
+type ManualReview struct {
+	Dependency                 string `json:"dependency"`
+	Reason                     string `json:"reason"`
+	CandidatesChecked          int    `json:"candidates_checked,omitempty"`
+	LastCandidate              string `json:"last_candidate,omitempty"`
+	TargetFindingsRemoved      bool   `json:"target_findings_removed,omitempty"`
+	RemainingThresholdFindings int    `json:"remaining_threshold_findings,omitempty"`
+	NewThresholdFindings       int    `json:"new_threshold_findings,omitempty"`
+}
+
 type Result struct {
 	Status          Status          `json:"status"`
 	Ecosystem       string          `json:"ecosystem"`
@@ -38,6 +48,7 @@ type Result struct {
 	Dependency      *Dependency     `json:"dependency,omitempty"`
 	Dependencies    []Dependency    `json:"dependencies,omitempty"`
 	Vulnerabilities []Vulnerability `json:"vulnerabilities,omitempty"`
+	ManualReviews   []ManualReview  `json:"manual_reviews,omitempty"`
 	ChangedFiles    []string        `json:"changed_files,omitempty"`
 	Verification    *Verification   `json:"verification,omitempty"`
 	Message         string          `json:"message,omitempty"`

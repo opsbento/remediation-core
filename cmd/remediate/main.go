@@ -42,7 +42,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "remediation failed: %v\n", err)
 		os.Exit(1)
 	}
-	if result.Status != core.StatusVerifiedUpdate && result.Status != core.StatusNoFinding && result.Status != core.StatusSkipped && result.Status != core.StatusNeedsManual {
+	if result.Status != core.StatusVerifiedUpdate && result.Status != core.StatusNoFinding && result.Status != core.StatusSkipped {
 		os.Exit(1)
 	}
 }

@@ -263,6 +263,9 @@ func TestEngineMajorOnlyFixNeedsManualReview(t *testing.T) {
 	if result.Status != StatusNeedsManual {
 		t.Fatalf("got status %q, want %q", result.Status, StatusNeedsManual)
 	}
+	if len(result.ManualReviews) != 1 || result.ManualReviews[0].Dependency != "pkg" {
+		t.Fatalf("unexpected manual review diagnostics: %#v", result.ManualReviews)
+	}
 }
 
 func TestEngineRejectsUnexpectedChangedFile(t *testing.T) {
