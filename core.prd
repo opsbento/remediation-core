@@ -303,6 +303,9 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] remediation-demo berhasil membuat Pull Request.
 [Done] remediation-demo berhasil rerun workflow dan update PR existing tanpa membuat PR duplicate.
 [Done] remediation-demo punya mixed dependency fixture untuk vulnerable dan non-vulnerable dependency.
+[Done] remediation-demo punya Go scan fixture.
+[Done] remediation-demo punya Python scan fixture.
+[Done] remediation-demo dependency scan berjalan matrix untuk npm, Go, dan Python fixtures.
 [Done] remediation-demo skips generic dependency scan gate for remediation/* Pull Requests.
 [Done] remediation-demo automation aligned with Dependabot model: daily scheduled remediation and scan gates on PR/push main.
 [Done] *.prd sudah ditambahkan ke .gitignore di repo terkait.
@@ -316,6 +319,8 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Todo] Validasi behavior ketika PR ditutup tanpa merge.
 [Todo] Publish remediation-core v0.2.2 release asset.
 [Todo] Tag security-workflows v1.0.0 dan floating tag v1 setelah v0.2.2 asset tersedia.
+[Todo] Implement Go remediation adapter.
+[Todo] Implement Python remediation adapter.
 [Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
 [Todo] Tambahkan test case demo khusus untuk no finding.
 [Todo] Tambahkan test case demo untuk major-only fix blocked.
