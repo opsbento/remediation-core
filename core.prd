@@ -319,8 +319,8 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 
 ```text
 [Todo] Validasi behavior ketika PR ditutup tanpa merge.
-[Todo] Publish remediation-core v0.2.3 release asset.
-[Todo] Tag security-workflows v1.0.0 dan floating tag v1 setelah v0.2.3 asset tersedia.
+[Done] Publish remediation-core v0.2.3 release asset.
+[Done] Tag security-workflows v1.0.0 dan floating tag v1 setelah v0.2.3 asset tersedia.
 [Todo] Implement Go remediation adapter.
 [Todo] Implement Python remediation adapter.
 [Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
@@ -1622,7 +1622,7 @@ Compatibility matrix:
 | Security Workflows | Remediation Core | Status           |
 | ------------------ | ---------------- | ---------------- |
 | main               | v0.2.3           | Active demo      |
-| v1.0.0             | v0.2.3           | Planned          |
+| v1.0.0             | v0.2.3           | Released         |
 
 ---
 
