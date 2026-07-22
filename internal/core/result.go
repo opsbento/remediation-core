@@ -24,10 +24,11 @@ type Vulnerability struct {
 }
 
 type Verification struct {
-	TargetFindingsRemoved bool `json:"target_findings_removed"`
-	NewCriticalFindings   int  `json:"new_critical_findings"`
-	NewThresholdFindings  int  `json:"new_threshold_findings"`
-	DependencyFilesValid  bool `json:"dependency_files_valid"`
+	TargetFindingsRemoved      bool `json:"target_findings_removed"`
+	RemainingThresholdFindings int  `json:"remaining_threshold_findings"`
+	NewCriticalFindings        int  `json:"new_critical_findings"`
+	NewThresholdFindings       int  `json:"new_threshold_findings"`
+	DependencyFilesValid       bool `json:"dependency_files_valid"`
 }
 
 type Result struct {

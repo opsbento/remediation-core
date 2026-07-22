@@ -293,6 +293,8 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 [Done] kandidat remediation diprioritaskan berdasarkan severity sebelum nama package.
 [Done] default maximum_updates dinaikkan dari 1 ke 5 di core dan reusable workflow.
 [Done] resolver/verifier menolak candidate version yang masih memunculkan finding baru pada threshold minimum severity.
+[Done] result.json mencatat remaining_threshold_findings setelah remediation.
+[Done] remediation result menjadi FAILED jika masih ada finding pada minimum severity setelah selected updates.
 [Done] core punya extension point general untuk remediate transitive finding lewat direct parent dependency.
 [Done] npm adapter bisa map transitive package dari package-lock.json ke direct parent.
 [Done] dependency scan workflow sudah memakai Syft source metadata agar warning unnamed directory hilang.
@@ -317,8 +319,8 @@ Bagian ini menjadi acuan status terbaru setelah validasi pipeline `remediation-d
 
 ```text
 [Todo] Validasi behavior ketika PR ditutup tanpa merge.
-[Todo] Publish remediation-core v0.2.2 release asset.
-[Todo] Tag security-workflows v1.0.0 dan floating tag v1 setelah v0.2.2 asset tersedia.
+[Todo] Publish remediation-core v0.2.3 release asset.
+[Todo] Tag security-workflows v1.0.0 dan floating tag v1 setelah v0.2.3 asset tersedia.
 [Todo] Implement Go remediation adapter.
 [Todo] Implement Python remediation adapter.
 [Todo] Putuskan apakah commit lama yang unsigned perlu di-rewrite dan re-sign.
@@ -1612,15 +1614,15 @@ Pinned engine:
 ```text
 security-workflows v1.0.0
         ↓
-remediation-core v0.2.2
+remediation-core v0.2.3
 ```
 
 Compatibility matrix:
 
 | Security Workflows | Remediation Core | Status           |
 | ------------------ | ---------------- | ---------------- |
-| main               | v0.2.2           | Active demo      |
-| v1.0.0             | v0.2.2           | Planned          |
+| main               | v0.2.3           | Active demo      |
+| v1.0.0             | v0.2.3           | Planned          |
 
 ---
 

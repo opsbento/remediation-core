@@ -225,14 +225,22 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 		removed = false
 	}
 	verification := Verification{
-		TargetFindingsRemoved: removed,
-		NewCriticalFindings:   verifier.NewCriticalFindings(before, after),
-		NewThresholdFindings:  verifier.NewFindingsAtSeverity(before, after, job.MinimumSeverity),
-		DependencyFilesValid:  valid,
+		TargetFindingsRemoved:      removed,
+		RemainingThresholdFindings: countFindingsAtSeverity(after, job.MinimumSeverity),
+		NewCriticalFindings:        verifier.NewCriticalFindings(before, after),
+		NewThresholdFindings:       verifier.NewFindingsAtSeverity(before, after, job.MinimumSeverity),
+		DependencyFilesValid:       valid,
 	}
 	status := StatusVerifiedUpdate
-	if !verification.TargetFindingsRemoved || verification.NewThresholdFindings > 0 || !verification.DependencyFilesValid {
+	if !verification.TargetFindingsRemoved ||
+		verification.RemainingThresholdFindings > 0 ||
+		verification.NewThresholdFindings > 0 ||
+		!verification.DependencyFilesValid {
 		status = StatusFailed
+	}
+	message := ""
+	if verification.RemainingThresholdFindings > 0 {
+		message = fmt.Sprintf("remediation is incomplete: %d findings remain at or above %s", verification.RemainingThresholdFindings, job.MinimumSeverity)
 	}
 
 	return Result{
@@ -244,6 +252,7 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 		Vulnerabilities: vulns,
 		ChangedFiles:    changed,
 		Verification:    &verification,
+		Message:         message,
 	}, nil
 }
 
@@ -410,6 +419,16 @@ func findingIDs(fs []findings.Finding) []string {
 		ids = append(ids, finding.VulnerabilityID)
 	}
 	return ids
+}
+
+func countFindingsAtSeverity(fs []findings.Finding, minimum string) int {
+	count := 0
+	for _, finding := range fs {
+		if findings.SeverityAtLeast(finding.Severity, minimum) {
+			count++
+		}
+	}
+	return count
 }
 
 func safeArtifactName(name string) string {

@@ -1,6 +1,6 @@
 # Remediation Core
 
-Provider-agnostic dependency remediation engine distributed as a pinned CLI release. The initial implementation targets npm direct dependencies and runs without Git provider credentials.
+Provider-agnostic dependency remediation engine distributed as a pinned CLI release. The initial implementation targets npm direct dependencies, with npm transitive findings remediated through direct parent updates when the lockfile can prove the parent.
 
 ## Current Scope
 
@@ -16,7 +16,7 @@ Provider-agnostic dependency remediation engine distributed as a pinned CLI rele
 
 | Security Workflows | Remediation Core | Status |
 | --- | --- | --- |
-| v1.0.0 | v0.2.2 | Planned |
+| v1.0.0 | v0.2.3 | Planned |
 
 ## CLI Usage
 
@@ -74,7 +74,7 @@ Tagged releases publish Linux CLI binaries:
 
 `security-workflows` downloads the pinned release asset instead of building `remediation-core` from source on every run.
 
-Use `v0.2.2` or newer for severity-prioritized multi-dependency remediation with candidate verification and supported transitive remediation through direct parent updates.
+Use `v0.2.3` or newer for strict scan-gate remediation: multi-dependency updates, candidate verification, supported transitive remediation through direct parent updates, and failure when threshold findings remain after remediation.
 
 Release notes can be stored in `docs/releases/<tag>.md`; the release workflow uses that file when creating or updating the GitHub Release.
 
@@ -83,7 +83,7 @@ Release notes can be stored in `docs/releases/<tag>.md`; the release workflow us
 `security-workflows` invokes this project as:
 
 ```text
-GitHub Release: opsbento/remediation-core v0.2.2
+GitHub Release: opsbento/remediation-core v0.2.3
 Asset: remediate-linux-amd64
 ```
 

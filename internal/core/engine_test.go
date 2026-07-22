@@ -68,6 +68,9 @@ func TestEngineVerifiedUpdate(t *testing.T) {
 	if result.Verification == nil || !result.Verification.TargetFindingsRemoved || !result.Verification.DependencyFilesValid {
 		t.Fatalf("unexpected verification: %#v", result.Verification)
 	}
+	if result.Verification.RemainingThresholdFindings != 0 {
+		t.Fatalf("unexpected remaining findings: %#v", result.Verification)
+	}
 }
 
 func TestEngineUpdatesMultipleDependenciesBySeverityPriority(t *testing.T) {
@@ -155,6 +158,44 @@ func TestEngineRejectsCandidateWithNewThresholdFinding(t *testing.T) {
 		t.Fatalf("got dependency %#v, want target 1.0.2", result.Dependency)
 	}
 	if result.Verification == nil || result.Verification.NewThresholdFindings != 0 {
+		t.Fatalf("unexpected verification: %#v", result.Verification)
+	}
+}
+
+func TestEngineFailsWhenThresholdFindingsRemain(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	engine := testEngine([]scanReport{
+		{findings: `{
+		  "matches": [
+		    {
+		      "vulnerability": {"id":"CVE-PKG","severity":"High","fix":{"state":"fixed","versions":["1.0.1"]}},
+		      "artifact": {"name":"pkg","version":"1.0.0","type":"npm","language":"npm"}
+		    },
+		    {
+		      "vulnerability": {"id":"CVE-OTHER","severity":"High","fix":{"state":"fixed","versions":["1.0.1"]}},
+		      "artifact": {"name":"other","version":"1.0.0","type":"npm","language":"npm"}
+		    }
+		  ]
+		}`},
+		{findings: grypeReport("other", "1.0.0", "CVE-OTHER", "High", "1.0.1")},
+		{findings: grypeReport("other", "1.0.0", "CVE-OTHER", "High", "1.0.1")},
+	})
+
+	result, err := engine.Run(context.Background(), Job{
+		Directory:       ".",
+		Ecosystem:       "npm",
+		MinimumSeverity: "high",
+		Strategy:        "minimum-safe",
+		MaximumUpdates:  1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != StatusFailed {
+		t.Fatalf("got status %q, want %q", result.Status, StatusFailed)
+	}
+	if result.Verification == nil || result.Verification.RemainingThresholdFindings != 1 {
 		t.Fatalf("unexpected verification: %#v", result.Verification)
 	}
 }
