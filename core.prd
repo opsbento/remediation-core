@@ -240,9 +240,9 @@ End-to-end remediation and Pull Request creation must be validated from a caller
 ### Not Done Yet
 
 ```text
-[Not Done] Pin third-party GitHub actions to full commit SHA for production
-[Not Done] Tag security-workflows v1.0.0 / v1
-[Not Done] Validate duplicate PR prevention by rerunning caller workflow
+[Done] Pin third-party GitHub actions to full commit SHA for production
+[Done] Tag security-workflows v1.0.0 / v1
+[Done] Validate duplicate PR prevention by rerunning caller workflow
 [Not Done] Validate closed-without-merge behavior
 [Not Done] Decide whether historical unsigned commits should be re-signed
 ```

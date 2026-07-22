@@ -16,7 +16,7 @@ Provider-agnostic dependency remediation engine distributed as a pinned CLI rele
 
 | Security Workflows | Remediation Core | Status |
 | --- | --- | --- |
-| v1.0.0 | v0.2.3 | Planned |
+| v1.0.0 | v0.2.3 | Released |
 
 ## CLI Usage
 
