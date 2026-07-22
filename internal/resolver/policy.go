@@ -15,6 +15,38 @@ type Policy struct {
 	AllowMajor bool
 }
 
+func ResolveUpgradeCandidates(packageName, installedVersion string, registry Registry, policy Policy) ([]string, error) {
+	available, err := registry.Versions(packageName)
+	if err != nil {
+		return nil, err
+	}
+	current, err := ParseVersion(installedVersion)
+	if err != nil {
+		return nil, err
+	}
+	var candidates []string
+	for _, candidate := range available {
+		if IsPrerelease(candidate) || Compare(candidate, installedVersion) <= 0 {
+			continue
+		}
+		target, err := ParseVersion(candidate)
+		if err != nil {
+			continue
+		}
+		if !policy.AllowMajor && target.Major != current.Major {
+			continue
+		}
+		candidates = append(candidates, candidate)
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		return Compare(candidates[i], candidates[j]) < 0
+	})
+	if len(candidates) == 0 {
+		return nil, fmt.Errorf("no upgrade candidate satisfies policy")
+	}
+	return candidates, nil
+}
+
 func ResolveMinimumSafe(group findings.Group, registry Registry, policy Policy) (string, error) {
 	candidates, err := ResolveCandidates(group, registry, policy)
 	if err != nil {

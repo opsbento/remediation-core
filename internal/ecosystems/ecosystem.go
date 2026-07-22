@@ -17,3 +17,7 @@ type Adapter interface {
 	Validate(ctx context.Context, workdir string) error
 	AllowedChangedFiles() []string
 }
+
+type ParentResolver interface {
+	DirectParents(workdir, packageName string) ([]Dependency, error)
+}

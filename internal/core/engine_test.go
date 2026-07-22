@@ -159,6 +159,47 @@ func TestEngineRejectsCandidateWithNewThresholdFinding(t *testing.T) {
 	}
 }
 
+func TestEngineUpdatesDirectParentForTransitiveFinding(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	engine := testEngine([]scanReport{
+		{findings: grypeReport("qs", "6.7.0", "CVE-QS", "High", "6.7.3")},
+		{findings: `{"matches":[]}`},
+		{findings: `{"matches":[]}`},
+	})
+	engine.Registry = fakeRegistry{"4.17.1", "4.18.0", "4.19.2", "5.0.0"}
+	engine.Adapters = []ecosystems.Adapter{
+		&fakeAdapter{
+			deps: []ecosystems.Dependency{
+				{Name: "express", Version: "4.17.1", Relationship: "direct", Section: "dependencies"},
+			},
+			parents: map[string][]ecosystems.Dependency{
+				"qs": {
+					{Name: "express", Version: "4.17.1", Relationship: "direct-parent", Section: "dependencies"},
+				},
+			},
+			valid: true,
+		},
+	}
+
+	result, err := engine.Run(context.Background(), Job{
+		Directory:       ".",
+		Ecosystem:       "npm",
+		MinimumSeverity: "high",
+		Strategy:        "minimum-safe",
+		MaximumUpdates:  1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != StatusVerifiedUpdate {
+		t.Fatalf("got status %q, want %q: %s", result.Status, StatusVerifiedUpdate, result.Message)
+	}
+	if result.Dependency == nil || result.Dependency.Name != "express" || result.Dependency.To != "4.18.0" || result.Dependency.Relationship != "direct-parent" {
+		t.Fatalf("unexpected dependency result: %#v", result.Dependency)
+	}
+}
+
 func TestEngineMajorOnlyFixNeedsManualReview(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
@@ -259,8 +300,9 @@ func (r fakeRegistry) Versions(packageName string) ([]string, error) {
 }
 
 type fakeAdapter struct {
-	deps  []ecosystems.Dependency
-	valid bool
+	deps    []ecosystems.Dependency
+	parents map[string][]ecosystems.Dependency
+	valid   bool
 }
 
 func (a *fakeAdapter) Name() string {
@@ -273,6 +315,10 @@ func (a *fakeAdapter) Detect(workdir string) (bool, error) {
 
 func (a *fakeAdapter) Parse(workdir string) ([]ecosystems.Dependency, error) {
 	return a.deps, nil
+}
+
+func (a *fakeAdapter) DirectParents(workdir, packageName string) ([]ecosystems.Dependency, error) {
+	return a.parents[packageName], nil
 }
 
 func (a *fakeAdapter) Update(ctx context.Context, workdir, packageName, targetVersion string) error {

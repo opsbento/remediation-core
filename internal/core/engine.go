@@ -41,6 +41,12 @@ type ChangeTracker interface {
 	ChangedFiles(ctx context.Context, workdir string) ([]string, error)
 }
 
+type remediationTarget struct {
+	Dependency ecosystems.Dependency
+	Groups     []findings.Group
+	Direct     bool
+}
+
 func NewEngine() Engine {
 	return Engine{
 		Inventory:     syft.Runner{},
@@ -102,33 +108,32 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 		return failed(job, err), err
 	}
 
+	targets, manualReasons, err := e.remediationTargets(workdir, adapter, deps, groups)
+	if err != nil {
+		return failed(job, err), err
+	}
 	updates := []Dependency{}
 	selectedGroups := []findings.Group{}
-	manualReasons := []string{}
-	for _, group := range groups {
+	for _, target := range targets {
 		if len(updates) >= job.MaximumUpdates {
 			break
 		}
-		current, ok := verifier.HasDirectDependency(deps, group.PackageName)
-		if !ok {
-			continue
-		}
-		candidates, err := resolver.ResolveCandidates(group, e.Registry, resolver.Policy{AllowMajor: job.AllowMajor})
+		candidates, err := e.candidates(target, job.AllowMajor)
 		if err != nil {
-			manualReasons = append(manualReasons, fmt.Sprintf("%s: %s", group.PackageName, err.Error()))
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: %s", target.Dependency.Name, err.Error()))
 			continue
 		}
 
 		var selected string
-		for _, target := range candidates {
+		for _, candidate := range candidates {
 			updateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-			err = adapter.Update(updateCtx, workdir, group.PackageName, target)
+			err = adapter.Update(updateCtx, workdir, target.Dependency.Name, candidate)
 			cancel()
 			if err != nil {
-				return failed(job, fmt.Errorf("update dependency %s: %w", group.PackageName, err)), err
+				return failed(job, fmt.Errorf("update dependency %s: %w", target.Dependency.Name, err)), err
 			}
-			candidateSBOM := filepath.Join(artifactDir, fmt.Sprintf("sbom.candidate.%s.json", safeArtifactName(group.PackageName)))
-			candidateFindings := filepath.Join(artifactDir, fmt.Sprintf("findings.candidate.%s.json", safeArtifactName(group.PackageName)))
+			candidateSBOM := filepath.Join(artifactDir, fmt.Sprintf("sbom.candidate.%s.json", safeArtifactName(target.Dependency.Name)))
+			candidateFindings := filepath.Join(artifactDir, fmt.Sprintf("findings.candidate.%s.json", safeArtifactName(target.Dependency.Name)))
 			if err := e.Inventory.Generate(ctx, workdir, candidateSBOM); err != nil {
 				return failed(job, fmt.Errorf("generate candidate SBOM: %w", err)), err
 			}
@@ -143,26 +148,31 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 			if err != nil {
 				return failed(job, err), err
 			}
-			vulnIDs := findingIDs(group.Findings)
-			if verifier.TargetFindingsRemoved(candidateAfter, group.PackageName, vulnIDs) &&
+			if allTargetFindingsRemoved(candidateAfter, target.Groups) &&
 				verifier.NewFindingsAtSeverity(before, candidateAfter, job.MinimumSeverity) == 0 {
-				selected = target
+				selected = candidate
 				break
 			}
 		}
 		if selected == "" {
-			manualReasons = append(manualReasons, fmt.Sprintf("%s: no candidate avoids new findings at or above %s", group.PackageName, job.MinimumSeverity))
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: no candidate avoids new findings at or above %s", target.Dependency.Name, job.MinimumSeverity))
+			rollbackCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+			err = adapter.Update(rollbackCtx, workdir, target.Dependency.Name, target.Dependency.Version)
+			cancel()
+			if err != nil {
+				return failed(job, fmt.Errorf("rollback dependency %s: %w", target.Dependency.Name, err)), err
+			}
 			continue
 		}
 		updates = append(updates, Dependency{
-			Name:         group.PackageName,
-			From:         current.Version,
+			Name:         target.Dependency.Name,
+			From:         target.Dependency.Version,
 			To:           selected,
-			Relationship: current.Relationship,
+			Relationship: target.Dependency.Relationship,
 		})
-		selectedGroups = append(selectedGroups, group)
+		selectedGroups = append(selectedGroups, target.Groups...)
 		for i := range deps {
-			if deps[i].Name == group.PackageName {
+			if deps[i].Name == target.Dependency.Name {
 				deps[i].Version = selected
 			}
 		}
@@ -171,7 +181,7 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 		if len(manualReasons) > 0 {
 			return Result{Status: StatusNeedsManual, Ecosystem: adapter.Name(), Directory: job.Directory, Message: strings.Join(manualReasons, "; ")}, nil
 		}
-		return Result{Status: StatusSkipped, Ecosystem: adapter.Name(), Directory: job.Directory, Message: "only direct dependencies are supported"}, nil
+		return Result{Status: StatusSkipped, Ecosystem: adapter.Name(), Directory: job.Directory, Message: "no supported direct or parent dependency remediation target found"}, nil
 	}
 	validateCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	valid := adapter.Validate(validateCtx, workdir) == nil
@@ -211,15 +221,8 @@ func (e Engine) Run(ctx context.Context, job Job) (Result, error) {
 
 	vulns := vulnerabilitiesForGroups(selectedGroups)
 	removed := true
-	for _, group := range selectedGroups {
-		vulnIDs := make([]string, 0, len(group.Findings))
-		for _, finding := range group.Findings {
-			vulnIDs = append(vulnIDs, finding.VulnerabilityID)
-		}
-		if !verifier.TargetFindingsRemoved(after, group.PackageName, vulnIDs) {
-			removed = false
-			break
-		}
+	if !allTargetFindingsRemoved(after, selectedGroups) {
+		removed = false
 	}
 	verification := Verification{
 		TargetFindingsRemoved: removed,
@@ -329,6 +332,78 @@ func vulnerabilitiesForGroups(groups []findings.Group) []Vulnerability {
 	return out
 }
 
+func (e Engine) remediationTargets(workdir string, adapter ecosystems.Adapter, deps []ecosystems.Dependency, groups []findings.Group) ([]remediationTarget, []string, error) {
+	targets := map[string]*remediationTarget{}
+	var order []string
+	var manualReasons []string
+	parentResolver, canResolveParents := adapter.(ecosystems.ParentResolver)
+
+	add := func(dep ecosystems.Dependency, group findings.Group, direct bool) {
+		key := dep.Name
+		target := targets[key]
+		if target == nil {
+			target = &remediationTarget{Dependency: dep, Direct: direct}
+			targets[key] = target
+			order = append(order, key)
+		}
+		target.Groups = append(target.Groups, group)
+	}
+
+	for _, group := range groups {
+		if current, ok := verifier.HasDirectDependency(deps, group.PackageName); ok {
+			add(current, group, true)
+			continue
+		}
+		if !canResolveParents {
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: transitive remediation is not supported by %s adapter", group.PackageName, adapter.Name()))
+			continue
+		}
+		parents, err := parentResolver.DirectParents(workdir, group.PackageName)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(parents) == 0 {
+			manualReasons = append(manualReasons, fmt.Sprintf("%s: no direct parent dependency found", group.PackageName))
+			continue
+		}
+		add(parents[0], group, false)
+	}
+
+	out := make([]remediationTarget, 0, len(order))
+	for _, key := range order {
+		out = append(out, *targets[key])
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		left := groupsRank(out[i].Groups)
+		right := groupsRank(out[j].Groups)
+		if left != right {
+			return left > right
+		}
+		if out[i].Direct != out[j].Direct {
+			return out[i].Direct
+		}
+		return out[i].Dependency.Name < out[j].Dependency.Name
+	})
+	return out, manualReasons, nil
+}
+
+func (e Engine) candidates(target remediationTarget, allowMajor bool) ([]string, error) {
+	policy := resolver.Policy{AllowMajor: allowMajor}
+	if target.Direct && len(target.Groups) == 1 && target.Groups[0].PackageName == target.Dependency.Name {
+		return resolver.ResolveCandidates(target.Groups[0], e.Registry, policy)
+	}
+	return resolver.ResolveUpgradeCandidates(target.Dependency.Name, target.Dependency.Version, e.Registry, policy)
+}
+
+func allTargetFindingsRemoved(after []findings.Finding, groups []findings.Group) bool {
+	for _, group := range groups {
+		if !verifier.TargetFindingsRemoved(after, group.PackageName, findingIDs(group.Findings)) {
+			return false
+		}
+	}
+	return true
+}
+
 func findingIDs(fs []findings.Finding) []string {
 	ids := make([]string, 0, len(fs))
 	for _, finding := range fs {
@@ -366,6 +441,16 @@ func sortGroupsByPriority(groups []findings.Group) {
 		}
 		return groups[i].PackageName < groups[j].PackageName
 	})
+}
+
+func groupsRank(groups []findings.Group) int {
+	rank := 0
+	for _, group := range groups {
+		if current := groupRank(group); current > rank {
+			rank = current
+		}
+	}
+	return rank
 }
 
 func groupRank(group findings.Group) int {
